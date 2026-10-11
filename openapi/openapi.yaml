@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Nyuchi Maps
-  version: 0.1.0
+  version: 0.0.1
   summary: The Nyuchi platform base map.
   description: |
     Vector tiles, styles, glyphs and sprites for every Mukoko app and Nyuchi

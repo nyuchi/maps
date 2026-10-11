@@ -1,6 +1,6 @@
 {
   "name": "nyuchi-maps",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "private": true,
   "description": "Nyuchi Maps: the Nyuchi platform base-map service, a Cloudflare Worker serving PMTiles from R2",
   "license": "Apache-2.0",
