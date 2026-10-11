@@ -61,16 +61,13 @@ const caches = new WeakMap<R2Bucket, SharedPromiseCache>();
 /** Tile bytes are passed through still compressed (see tileEncoding). */
 const passThrough = async (buf: ArrayBuffer): Promise<ArrayBuffer> => buf;
 
-export function openArchive(env: Env): PMTiles {
+export function openArchive(env: Env, key: string): PMTiles {
   let cache = caches.get(env.MAPS_BUCKET);
   if (!cache) {
     cache = new SharedPromiseCache(200);
     caches.set(env.MAPS_BUCKET, cache);
   }
-  const source = new R2Source(
-    env.MAPS_BUCKET,
-    env.TILES_KEY || DEFAULT_TILES_KEY,
-  );
+  const source = new R2Source(env.MAPS_BUCKET, key);
   // `cache` decompresses directories itself; this decompress only touches
   // tile bytes, which the client can inflate.
   return new PMTiles(source, cache, passThrough);

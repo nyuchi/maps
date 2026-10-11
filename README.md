@@ -17,15 +17,16 @@ owner provisions the DNS record.
 
 ## Routes
 
-| Route                                    | What it serves                                              |
-| ---------------------------------------- | ----------------------------------------------------------- |
-| `GET /health`                            | Liveness, answered at the edge                              |
-| `GET /openapi.json`                      | The OpenAPI 3.1 contract ([`openapi/`](openapi/))           |
-| `GET /v1/tiles.json`                     | TileJSON 3.0.0 for the archive, with the credits            |
-| `GET /v1/tiles/{z}/{x}/{y}.mvt`          | One tile (the extension follows the archive's tile type)    |
-| `GET /v1/styles/{light,dark}.json`       | MapLibre styles that reference only our tiles, fonts, icons |
-| `GET /v1/fonts/{stack}/{range}.pbf`      | Glyph PBFs from the bucket                                  |
-| `GET /v1/sprites/{name}[@2x].{json,png}` | Sprite index and sheets from the bucket                     |
+| Route                                                            | What it serves                                                        |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `GET /health`                                                    | Liveness, answered at the edge                                        |
+| `GET /openapi.json`                                              | The OpenAPI 3.1 contract ([`openapi/`](openapi/))                     |
+| `GET /v1/tiles.json`                                             | TileJSON 3.0.0 for the archive, with the credits                      |
+| `GET /v1/tiles/{z}/{x}/{y}.mvt`                                  | One tile (the extension follows the archive's tile type)              |
+| `GET /v1/sources/{id}/tiles.json`, `.../tiles/{z}/{x}/{y}.{ext}` | Any further registered tile source (none ships yet; see architecture) |
+| `GET /v1/styles/{light,dark}.json`                               | MapLibre styles that reference only our tiles, fonts, icons           |
+| `GET /v1/fonts/{stack}/{range}.pbf`                              | Glyph PBFs from the bucket                                            |
+| `GET /v1/sprites/{name}[@2x].{json,png}`                         | Sprite index and sheets from the bucket                               |
 
 Behaviour worth knowing:
 

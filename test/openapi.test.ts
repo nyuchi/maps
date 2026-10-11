@@ -5,6 +5,8 @@ const EXPECTED_PATHS = [
   "/health",
   "/openapi.json",
   "/v1/fonts/{stack}/{range}.pbf",
+  "/v1/sources/{source}/tiles.json",
+  "/v1/sources/{source}/tiles/{z}/{x}/{y}.{ext}",
   "/v1/sprites/{name}.{ext}",
   "/v1/styles/{name}.json",
   "/v1/tiles.json",

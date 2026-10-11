@@ -1,5 +1,6 @@
 import { zxyToTileId } from "pmtiles";
-import app from "../src/index";
+import app, { createApp } from "../src/index";
+import type { SourceDef } from "../src/sources";
 import type { Env } from "../src/types";
 
 export const BASE = "https://maps.test";
@@ -90,9 +91,13 @@ export async function call(
   env: Env,
   init?: RequestInit,
   ctx: ExecutionContext = makeCtx().ctx,
+  worker: { fetch: typeof app.fetch } = app,
 ): Promise<Response> {
-  return app.fetch(new Request(`${BASE}${path}`, init), env, ctx);
+  return worker.fetch(new Request(`${BASE}${path}`, init), env, ctx);
 }
+
+export { createApp };
+export type { SourceDef };
 
 // ---- PMTiles v3 writer (tests only) -----------------------------------------
 

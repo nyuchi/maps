@@ -40,6 +40,25 @@ Status codes: a tile absent from the archive but inside its zoom range is `204`
 (cached for minutes); bad coordinates `400`; archive missing from the bucket
 `503 archive_unavailable` (`no-store`).
 
+## Tile sources
+
+A source is one PMTiles archive in the bucket, registered in `src/sources.ts`
+(`SOURCES`). Today there is one, `basemap`, at the short URLs
+(`/v1/tiles.json`, `/v1/tiles/{z}/{x}/{y}.mvt`) and also at
+`/v1/sources/basemap/...`. Any further source is served at
+`/v1/sources/{id}/tiles.json` and `/v1/sources/{id}/tiles/{z}/{x}/{y}.{ext}`
+by the same handlers: same validation, caching, ETag, CORS and rate limit.
+Each source has its own object key, its own TileJSON (with its own credit ids,
+so an overlay shows only the credits that apply to it), and its own header and
+directory cache entries.
+
+This is how a Kweli places overlay would arrive later: a second archive
+(`tiles/kweli-places.pmtiles`), one entry in `SOURCES`, one var for its key, and
+a style layer that adds it as a second vector source. That overlay is not built
+here, and the registry ships with the base map only. `createApp(sources)` takes
+the registry as a parameter, which is how the tests exercise a second source
+without registering one.
+
 ## Styles, fonts, sprites and credits
 
 - **Styles** (`src/styles.ts`) are generated from `@protomaps/basemaps` layers,

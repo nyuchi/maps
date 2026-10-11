@@ -43,14 +43,20 @@ function escapeHtml(text: string): string {
     .replaceAll('"', "&quot;");
 }
 
-/** HTML for TileJSON / MapLibre attribution controls. */
-export function attributionHtml(): string {
-  return CREDITS.map(
-    (c) => `<a href="${escapeHtml(c.url)}">${escapeHtml(c.text)}</a>`,
-  ).join(" | ");
+function select(ids?: readonly string[]): readonly Credit[] {
+  return ids ? CREDITS.filter((c) => ids.includes(c.id)) : CREDITS;
+}
+
+/** HTML for TileJSON / MapLibre attribution controls (all credits by default). */
+export function attributionHtml(ids?: readonly string[]): string {
+  return select(ids)
+    .map((c) => `<a href="${escapeHtml(c.url)}">${escapeHtml(c.text)}</a>`)
+    .join(" | ");
 }
 
 /** Plain text, for logs and non-HTML consumers. */
-export function attributionText(): string {
-  return CREDITS.map((c) => c.text).join(" | ");
+export function attributionText(ids?: readonly string[]): string {
+  return select(ids)
+    .map((c) => c.text)
+    .join(" | ");
 }

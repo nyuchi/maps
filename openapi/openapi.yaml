@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Nyuchi Maps
-  version: 0.0.1
+  version: 0.1.0
   summary: The Nyuchi platform base map.
   description: |
     Vector tiles, styles, glyphs and sprites for every Mukoko app and Nyuchi
@@ -102,6 +102,53 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
         "429": {$ref: "#/components/responses/RateLimited"}
         "503": {$ref: "#/components/responses/ArchiveUnavailable"}
+  /v1/sources/{source}/tiles.json:
+    get:
+      tags: [Tiles]
+      operationId: getSourceTileJson
+      summary: TileJSON for a registered tile source other than the base map.
+      description: |
+        The Worker serves several PMTiles archives, each a registered source.
+        The base map is the default source and also answers at `/v1/tiles.json`.
+      parameters:
+        - $ref: "#/components/parameters/Source"
+      responses:
+        "200":
+          description: TileJSON.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/TileJSON"}
+        "304": {$ref: "#/components/responses/NotModified"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "429": {$ref: "#/components/responses/RateLimited"}
+        "503": {$ref: "#/components/responses/ArchiveUnavailable"}
+  /v1/sources/{source}/tiles/{z}/{x}/{y}.{ext}:
+    get:
+      tags: [Tiles]
+      operationId: getSourceTile
+      summary: One tile from a registered tile source.
+      parameters:
+        - $ref: "#/components/parameters/Source"
+        - {name: z, in: path, required: true, schema: {type: integer, minimum: 0, maximum: 22}}
+        - {name: x, in: path, required: true, schema: {type: integer, minimum: 0}}
+        - {name: y, in: path, required: true, schema: {type: integer, minimum: 0}}
+        - name: ext
+          in: path
+          required: true
+          schema: {type: string, enum: [mvt, png, jpg, webp, avif, mlt]}
+      responses:
+        "200":
+          description: The tile (same headers and encoding as the base map tiles).
+          content:
+            application/vnd.mapbox-vector-tile:
+              schema: {type: string, format: binary}
+        "204":
+          description: No tile here (inside the archive's zoom range).
+        "304": {$ref: "#/components/responses/NotModified"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "429": {$ref: "#/components/responses/RateLimited"}
+        "503": {$ref: "#/components/responses/ArchiveUnavailable"}
   /v1/styles/{name}.json:
     get:
       tags: [Styles]
@@ -184,6 +231,13 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
         "429": {$ref: "#/components/responses/RateLimited"}
 components:
+  parameters:
+    Source:
+      name: source
+      in: path
+      required: true
+      description: A registered tile source id (see src/sources.ts).
+      schema: {type: string, pattern: "^[a-z][a-z0-9-]{0,31}$", examples: [basemap]}
   headers:
     ETag:
       description: Strong validator; send it back as `If-None-Match`.
