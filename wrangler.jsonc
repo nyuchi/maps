@@ -1,0 +1,59 @@
+/**
+ * Nyuchi Maps: the Nyuchi platform base-map service.
+ *
+ * A thin Worker over ONE R2 bucket holding a PMTiles archive, glyph PBFs and
+ * sprites. Nothing here is created by this file: the bucket, the DNS record
+ * and the route are the owner's to provision. See docs/ARCHITECTURE.md.
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nyuchi-maps",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-01",
+
+  // No *.workers.dev URL: the Worker is reachable only through the route
+  // below, once the owner enables it.
+  "workers_dev": false,
+
+  // openapi/openapi.yaml is imported as text and served at /openapi.json.
+  "rules": [{ "type": "Text", "globs": ["**/*.yaml"], "fallthrough": true }],
+
+  // Not active until the maps.nyuchi.com DNS record exists. The owner
+  // uncomments this, then deploys.
+  // "routes": [{ "pattern": "maps.nyuchi.com", "custom_domain": true }],
+
+  "vars": {
+    // Public origin used in TileJSON and style URLs, without a trailing
+    // slash. maps.nyuchi.com is the owner-confirmed host. When this is unset
+    // or invalid the Worker falls back to the origin of the request.
+    "PUBLIC_BASE_URL": "https://maps.nyuchi.com",
+    // Comma-separated first-party origins allowed by CORS. A leading
+    // "*." label after the scheme matches any subdomain.
+    "ALLOWED_ORIGINS": "https://weather.mukoko.com,https://weatherstations.nyuchi.com,http://localhost:3000",
+    // Object key of the PMTiles archive inside the bucket.
+    "TILES_KEY": "tiles/nyuchi-maps.pmtiles",
+  },
+
+  // The binding NAME is what the code uses. The bucket does not exist yet:
+  // the name below is a placeholder to replace when the owner creates it.
+  "r2_buckets": [
+    {
+      "binding": "MAPS_BUCKET",
+      "bucket_name": "nyuchi-maps-placeholder",
+    },
+  ],
+
+  // Per-IP limit on /v1 routes. namespace_id is ours to choose; it is unique
+  // per account, not a resource to create first.
+  "ratelimits": [
+    {
+      "name": "RATE_LIMITER",
+      "namespace_id": "1002",
+      "simple": { "limit": 600, "period": 60 },
+    },
+  ],
+
+  "observability": {
+    "enabled": true,
+  },
+}

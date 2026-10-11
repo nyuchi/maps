@@ -1,0 +1,36 @@
+# The org-wide lint gate: the identical caller from nyuchi/.github. Change
+# nothing here. It publishes the five contexts the org ruleset requires:
+#
+#   lint / actionlint
+#   lint / JSON validity
+#   lint / prettier
+#   lint / markdownlint
+#   lint / yamllint
+#
+# They come from the job being called `lint` and calling a reusable
+# workflow ("<caller job> / <called job>"). Do NOT convert this to a matrix.
+#
+# The reusable workflow is referenced by `@main` exactly as the org's
+# canonical caller does (it is org-owned, not a third-party action); every
+# third-party action in this repo is pinned to a commit SHA.
+
+name: Lint
+
+on:
+  pull_request:
+  push:
+    branches: [main, master, scaffold]
+  # Required for repos whose ruleset uses a merge queue.
+  merge_group:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    uses: nyuchi/.github/.github/workflows/reusable-lint.yml@main
