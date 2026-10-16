@@ -7,6 +7,9 @@ function bucketWithArchive() {
     "tiles/test.pmtiles",
     buildPmtiles([{ z: 0, x: 0, y: 0, data: new Uint8Array([1, 2, 3]) }], {
       maxZoom: 14,
+      metadata: {
+        vector_layers: [{ id: "roads", fields: { kind: "String" } }],
+      },
     }),
     "arch1",
   );
@@ -27,6 +30,9 @@ describe("GET /v1/tiles.json", () => {
     expect(tj.minzoom).toBe(0);
     expect(tj.maxzoom).toBe(14);
     expect(tj.bounds).toEqual([25.2, -22.45, 33.1, -15.55]);
+    expect(tj.vector_layers).toEqual([
+      { id: "roads", fields: { kind: "String" } },
+    ]);
   });
 
   it("carries every credit exactly once", async () => {
@@ -75,5 +81,20 @@ describe("GET /v1/tiles.json", () => {
   it("answers 503 when the archive is missing", async () => {
     const res = await call("/v1/tiles.json", makeEnv(new StubBucket()));
     expect(res.status).toBe(503);
+  });
+});
+
+describe("TileJSON vector_layers fallback", () => {
+  it("is an empty list when the archive metadata has none", async () => {
+    const bucket = new StubBucket().put(
+      "tiles/test.pmtiles",
+      buildPmtiles([{ z: 0, x: 0, y: 0, data: new Uint8Array([1]) }]),
+    );
+    const tj = (await (
+      await call("/v1/tiles.json", makeEnv(bucket))
+    ).json()) as {
+      vector_layers: unknown[];
+    };
+    expect(tj.vector_layers).toEqual([]);
   });
 });

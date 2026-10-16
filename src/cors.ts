@@ -1,5 +1,5 @@
 import type { MiddlewareHandler } from "hono";
-import { jsonError } from "./http";
+import { jsonError, rebuild } from "./http";
 import type { AppEnv } from "./types";
 
 /** Split the ALLOWED_ORIGINS var into trimmed, non-empty entries. */
@@ -66,13 +66,13 @@ export const cors: MiddlewareHandler<AppEnv> = async (c, next) => {
   await next();
 
   // Rebuild the response: ones from the Cache API have immutable headers.
-  const res = new Response(c.res.body, c.res);
-  if (origin !== undefined) {
-    res.headers.append("Vary", "Origin");
-    if (ok) {
-      res.headers.set("Access-Control-Allow-Origin", origin);
-      res.headers.set("Access-Control-Expose-Headers", EXPOSE);
-    }
+  // rebuild() keeps encodeBody "manual" for already-compressed tiles.
+  const res = rebuild(c.res);
+  // Always vary on Origin: the same URL answers differently per origin.
+  res.headers.append("Vary", "Origin");
+  if (origin !== undefined && ok) {
+    res.headers.set("Access-Control-Allow-Origin", origin);
+    res.headers.set("Access-Control-Expose-Headers", EXPOSE);
   }
   c.res = res;
 };

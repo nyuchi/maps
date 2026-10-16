@@ -21,6 +21,8 @@ export interface GetCall {
 export class StubBucket {
   readonly objects = new Map<string, StoredObject>();
   readonly gets: GetCall[] = [];
+  /** When set, the next get() rejects with it (a transient R2 fault). */
+  failNext: Error | null = null;
 
   put(key: string, data: Uint8Array | string, etag = "etag1"): this {
     const bytes =
@@ -33,10 +35,15 @@ export class StubBucket {
     key: string,
     options?: {
       range?: { offset: number; length: number };
-      onlyIf?: { etagMatches?: string };
+      onlyIf?: { etagMatches?: string } | Headers;
     },
   ): Promise<unknown> {
     this.gets.push({ key, range: options?.range });
+    if (this.failNext) {
+      const err = this.failNext;
+      this.failNext = null;
+      throw err;
+    }
     const stored = this.objects.get(key);
     if (!stored) return null;
     const meta = {
@@ -45,8 +52,22 @@ export class StubBucket {
       httpEtag: `"${stored.etag}"`,
       size: stored.data.length,
     };
-    const want = options?.onlyIf?.etagMatches;
-    if (want && want !== stored.etag) return meta; // precondition failed: no body
+    const cond = options?.onlyIf;
+    if (cond instanceof Headers) {
+      // R2 evaluates request conditionals: a matching If-None-Match -> no body.
+      const inm = cond.get("If-None-Match");
+      if (
+        inm &&
+        inm
+          .split(",")
+          .map((t) => t.trim())
+          .includes(meta.httpEtag)
+      ) {
+        return meta;
+      }
+    } else if (cond?.etagMatches && cond.etagMatches !== stored.etag) {
+      return meta; // precondition failed: no body
+    }
     const slice = options?.range
       ? stored.data.slice(
           options.range.offset,
@@ -129,6 +150,8 @@ export interface ArchiveOptions {
   tileCompression?: number; // 1 none, 2 gzip
   minZoom?: number;
   maxZoom?: number;
+  /** JSON metadata block (stored uncompressed). */
+  metadata?: Record<string, unknown>;
 }
 
 /** A valid single-directory PMTiles v3 archive holding the given tiles. */
@@ -141,6 +164,7 @@ export function buildPmtiles(
     tileCompression = 1,
     minZoom = 0,
     maxZoom = 3,
+    metadata: metadataObject = {},
   } = options;
   const sorted = tiles
     .map((t) => ({ ...t, id: zxyToTileId(t.z, t.x, t.y) }))
@@ -159,7 +183,7 @@ export function buildPmtiles(
   for (const t of sorted) varint(t.data.length, dirBytes);
   sorted.forEach((_, i) => varint(i === 0 ? 1 : 0, dirBytes));
 
-  const metadata = new TextEncoder().encode("{}");
+  const metadata = new TextEncoder().encode(JSON.stringify(metadataObject));
   const rootOffset = 127;
   const rootLength = dirBytes.length;
   const metaOffset = rootOffset + rootLength;

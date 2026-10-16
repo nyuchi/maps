@@ -41,11 +41,17 @@ describe("GET /v1/fonts/{stack}/{range}.pbf", () => {
       { headers: { "If-None-Match": '"font1"' } },
     );
     expect(res.status).toBe(304);
+    expect(res.headers.get("ETag")).toBe('"font1"');
+    expect(await res.text()).toBe("");
   });
 
   it("404s a font or range it does not hold", async () => {
     const env = makeEnv(bucket());
-    expect((await call("/v1/fonts/Nope/0-255.pbf", env)).status).toBe(404);
+    const nope = await call("/v1/fonts/Nope/0-255.pbf", env);
+    expect(nope.status).toBe(404);
+    expect(nope.headers.get("Cache-Control")).toBe(
+      "public, max-age=300, s-maxage=3600",
+    );
     expect(
       (await call("/v1/fonts/Noto%20Sans%20Regular/256-511.pbf", env)).status,
     ).toBe(404);
@@ -69,7 +75,7 @@ describe("path traversal", () => {
   it("never reads R2 for dot-segment paths (the URL is normalised away)", async () => {
     const b = bucket();
     const res = await call("/v1/fonts/%2e%2e/0-255.pbf", makeEnv(b));
-    expect([400, 404]).toContain(res.status);
+    expect(res.status).toBe(404); // normalised to /v1/fonts/0-255.pbf
     expect(b.gets).toHaveLength(0);
   });
 });
@@ -96,9 +102,11 @@ describe("GET /v1/sprites/{name}[@2x].(json|png)", () => {
   });
 
   it("404s a sprite it does not hold", async () => {
-    expect(
-      (await call("/v1/sprites/dark.json", makeEnv(bucket()))).status,
-    ).toBe(404);
+    const res = await call("/v1/sprites/dark.json", makeEnv(bucket()));
+    expect(res.status).toBe(404);
+    expect(res.headers.get("Cache-Control")).toBe(
+      "public, max-age=300, s-maxage=3600",
+    );
   });
 
   it.each([

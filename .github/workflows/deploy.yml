@@ -1,0 +1,145 @@
+# Deploys the Worker to Cloudflare from GitHub Actions: on every push to
+# `main` (the release merge from `staging`) and by hand. Never on pull
+# requests, so no PR can reach the deploy credentials.
+#
+# The same test, typecheck and bundle checks as ci.yml run first; the deploy
+# job only starts when they pass. It runs in the `production` GitHub
+# Environment, which holds CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
+# Neither value is ever printed.
+#
+# Until the owner has created the R2 bucket (and put its real name in
+# wrangler.jsonc) a deploy fails at the bucket binding: that is intended.
+# The maps.nyuchi.com route is NOT enabled in wrangler.jsonc and workers_dev
+# is off, so a deployed Worker has no public URL until the route is turned
+# on; the smoke test then needs SMOKE_TEST_URL and is skipped without it.
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Never cancel a deploy that is already running.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # wrangler needs Node 22 or later.
+  NODE_VERSION: "24"
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run typecheck
+      # Bundles the Worker exactly as a deploy would, without deploying.
+      - run: npm run build
+
+  deploy:
+    name: Deploy
+    needs: verify
+    # A manual run from another branch only verifies; it never deploys.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+
+      - name: Check Cloudflare credentials are set
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # Reports only whether each value exists, never the value.
+          missing=0
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN is not set in the production environment"
+            missing=1
+          fi
+          if [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::CLOUDFLARE_ACCOUNT_ID is not set (secret or variable) in the production environment"
+            missing=1
+          fi
+          exit "$missing"
+
+      - name: Deploy to Cloudflare
+        id: deploy
+        uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4.1.3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy
+          quiet: "true"
+
+      - name: Smoke test
+        env:
+          # SMOKE_TEST_URL (a repository or environment variable), for example
+          # https://maps.nyuchi.com once the route is live, overrides the URL
+          # wrangler reports.
+          BASE_URL: ${{ vars.SMOKE_TEST_URL || steps.deploy.outputs.deployment-url }}
+        run: |
+          set -euo pipefail
+          if [ -z "$BASE_URL" ]; then
+            echo "::warning::No public URL to smoke test (route not enabled, workers_dev off). Set SMOKE_TEST_URL once the route is live."
+            exit 0
+          fi
+          BASE_URL="${BASE_URL%/}"
+          echo "Smoke testing ${BASE_URL}/health"
+
+          # A fresh deploy can take a moment to be served everywhere.
+          status=000
+          for attempt in 1 2 3 4 5 6; do
+            status=$(curl --silent --show-error --max-time 15 \
+              --dump-header headers.txt --output body.json \
+              --write-out '%{http_code}' "${BASE_URL}/health" || echo 000)
+            [ "$status" = "200" ] && break
+            echo "Attempt ${attempt}: HTTP ${status}, retrying in 10s"
+            sleep 10
+          done
+
+          fail=0
+          check() {
+            echo "::error::Smoke test failed: $1"
+            fail=1
+          }
+
+          [ "$status" = "200" ] || check "GET /health returned HTTP ${status}, expected 200"
+
+          if ! grep -qiE '^content-type:[[:space:]]*application/json' headers.txt; then
+            check "content-type is not application/json"
+          fi
+          if ! grep -qiE '^cache-control:[[:space:]]*no-store' headers.txt; then
+            check "cache-control is not no-store"
+          fi
+
+          # Exact body, so any unexpected extra field fails.
+          expected='{"status":"ok","service":"nyuchi-maps"}'
+          actual=$(tr -d '[:space:]' < body.json)
+          if [ "$actual" != "$expected" ]; then
+            check "body is not the expected health document"
+          fi
+
+          exit "$fail"

@@ -29,10 +29,12 @@ export const CREDITS: readonly Credit[] = [
     text: "© OpenStreetMap contributors",
     url: "https://www.openstreetmap.org/copyright",
   },
-  // TODO(protomaps): add a Protomaps credit here ONLY if the licence of the
-  // Protomaps basemap builds / basemap style asks for one. Check the terms
-  // at https://docs.protomaps.com/ before the first public release; until
-  // then it is deliberately absent so the credit list stays what is required.
+  // TODO(protomaps): add a Protomaps credit here ONLY if its terms ask for
+  // one. As recorded when this was written, the Protomaps basemap downloads
+  // name only OpenStreetMap attribution (the tiles are an ODbL Produced
+  // Work), so no Protomaps credit is listed. Re-check
+  // https://docs.protomaps.com/basemaps/downloads before the first public
+  // release and whenever the build source changes.
 ];
 
 function escapeHtml(text: string): string {

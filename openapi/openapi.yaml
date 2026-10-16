@@ -7,8 +7,9 @@ info:
     Vector tiles, styles, glyphs and sprites for every Mukoko app and Nyuchi
     product. Tiles are read from a single PMTiles archive (PMTiles v3) in R2
     with HTTP range reads. Map data is derived from OpenStreetMap and is
-    available under the ODbL; credits are carried by the TileJSON and must be
-    displayed by every map.
+    available under the ODbL as a Produced Work; credits are carried by the
+    TileJSON and must be displayed by every map. Every `/v1` response carries
+    `Vary: Origin`; CORS is an allow-list of first-party origins.
   license:
     name: Apache-2.0
     identifier: Apache-2.0
@@ -93,7 +94,15 @@ paths:
           content:
             application/vnd.mapbox-vector-tile:
               schema: {type: string, format: binary}
+            application/vnd.maplibre-vector-tile:
+              schema: {type: string, format: binary}
             image/png:
+              schema: {type: string, format: binary}
+            image/jpeg:
+              schema: {type: string, format: binary}
+            image/webp:
+              schema: {type: string, format: binary}
+            image/avif:
               schema: {type: string, format: binary}
         "204":
           description: No tile here (inside the archive's zoom range).
@@ -141,6 +150,16 @@ paths:
           description: The tile (same headers and encoding as the base map tiles).
           content:
             application/vnd.mapbox-vector-tile:
+              schema: {type: string, format: binary}
+            application/vnd.maplibre-vector-tile:
+              schema: {type: string, format: binary}
+            image/png:
+              schema: {type: string, format: binary}
+            image/jpeg:
+              schema: {type: string, format: binary}
+            image/webp:
+              schema: {type: string, format: binary}
+            image/avif:
               schema: {type: string, format: binary}
         "204":
           description: No tile here (inside the archive's zoom range).
@@ -265,6 +284,10 @@ components:
         attribution:
           type: string
           description: HTML credits. Maps must display this text.
+        vector_layers:
+          type: array
+          description: From the archive's metadata (empty when it has none).
+          items: {type: object}
         minzoom: {type: integer}
         maxzoom: {type: integer}
         bounds:
@@ -298,12 +321,17 @@ components:
         application/json:
           schema: {$ref: "#/components/schemas/Error"}
     NotFound:
-      description: Unknown name, tile outside the archive's zoom range, or missing object.
+      description: |
+        Unknown path, style, source, font or sprite; a tile outside the
+        archive's zoom range or with an extension that does not match the
+        archive's tile type; or an object that is not in the bucket.
       content:
         application/json:
           schema: {$ref: "#/components/schemas/Error"}
     RateLimited:
-      description: Too many requests from this IP. Retry after the `Retry-After` seconds.
+      description: |
+        Too many requests from this IP. Retry after `Retry-After` seconds.
+        Tiles are counted only when they miss the edge cache.
       headers:
         Retry-After: {schema: {type: integer}}
       content:

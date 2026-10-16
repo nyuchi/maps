@@ -30,17 +30,20 @@ owner provisions the DNS record.
 
 Behaviour worth knowing:
 
-- Tiles are passed through still compressed (`Content-Encoding: gzip`), with a
-  long edge cache (`s-maxage` 30 days), an `ETag` and `304` on `If-None-Match`.
+- Tiles are passed through still compressed (`Content-Encoding: gzip`, with
+  `encodeBody: "manual"` so the runtime does not gzip them again), with a long
+  edge cache (`s-maxage` 30 days), an `ETag` and `304` on `If-None-Match`.
+  `/v1/tiles.json` is TileJSON 3.0.0 including `vector_layers` from the archive.
 - A tile the archive does not hold, inside its zoom range, is `204`. Outside the
   zoom range, an unknown style, font, sprite or object is `404`. Bad
   coordinates or names are `400` and never reach R2.
 - Every path piece is validated against a strict pattern before it can form an
   R2 key, so there is no path traversal.
-- Per-IP rate limit on `/v1` through the `RATE_LIMITER` binding (it fails open).
-  `429` carries `Retry-After`.
+- Per-IP rate limit on `/v1` through the `RATE_LIMITER` binding (1800 a minute;
+  it fails open). Tiles count only when they miss the edge cache, and a request
+  with no `CF-Connecting-IP` is not limited. `429` carries `Retry-After`.
 - CORS is an allow-list from `ALLOWED_ORIGINS`; first-party apps use an
-  allow-listed origin. `?lang=sn` on a style picks the label language.
+  allow-listed origin. Every response carries `Vary: Origin`. `?lang=sn` on a style picks the label language.
 
 Use it from MapLibre by style URL:
 
@@ -67,16 +70,22 @@ this first slice; see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 | `RATE_LIMITER`    | binding | Workers rate limiting, 600 requests a minute per client IP               |
 | `PUBLIC_BASE_URL` | var     | Public origin for URLs in TileJSON and styles; `https://maps.nyuchi.com` |
 | `ALLOWED_ORIGINS` | var     | Comma-separated CORS origins; `https://*.example.com` matches subdomains |
+| `TILES_VERSION`   | var     | Part of the edge cache key; bump and deploy when the archive is replaced |
 | `TILES_KEY`       | var     | Object key of the archive, `tiles/nyuchi-maps.pmtiles`                   |
 
-There are no secrets. `workers_dev` is off, no route is enabled and observability
-is on. Nothing in this repo creates a bucket, a DNS record or a deployment.
+There are no secrets. `workers_dev` and preview URLs are off, no route is
+enabled and observability is on. `ALLOWED_ORIGINS` in `wrangler.jsonc` is the
+production list only; for `wrangler dev` copy `.dev.vars.example` to `.dev.vars`
+to add `http://localhost:3000`. Nothing in this repo creates a bucket, a DNS record or a deployment.
 
 Bucket layout:
 
 ```text
 tiles/nyuchi-maps.pmtiles
-fonts/{font name}/{range}.pbf        e.g. fonts/Noto Sans Regular/0-255.pbf
+fonts/OFL.txt                         copy of licenses/OFL-1.1-Noto-Sans.txt
+fonts/{font name}/{range}.pbf         the stacks the styles use:
+    Noto Sans Regular, Noto Sans Medium, Noto Sans Italic,
+    Noto Sans Devanagari Regular v1
 sprites/{light,dark}[@2x].{json,png}
 ```
 
@@ -91,6 +100,18 @@ npm test            # Workers Vitest suite, stubbed R2 and rate limiter
 npm run typecheck
 npm run build       # wrangler deploy --dry-run: bundles, deploys nothing
 npm run dev         # wrangler dev (needs a local R2 archive)
+```
+
+Tests include `test/encoding.test.ts`, which runs the real Worker entry in
+workerd. To check double compression by hand against a local archive (put one in
+the simulated bucket with
+`npx wrangler r2 object put nyuchi-maps-placeholder/tiles/nyuchi-maps.pmtiles --file x.pmtiles --local`):
+
+```sh
+npx wrangler dev
+curl -s -H 'Accept-Encoding: gzip' --raw http://localhost:8787/v1/tiles/0/0/0.mvt -o t.gz
+gzip -t t.gz                      # exits 0: gzip exactly once
+gzip -dc t.gz | gzip -t           # must FAIL ("not in gzip format"): the tile is not gzipped twice
 ```
 
 Tests run inside workerd with
@@ -114,10 +135,12 @@ threads) and the five lint checks. Releases follow the same convention as
 ## Licences
 
 - **Code** (the Worker, tests, scripts): Apache-2.0, see [LICENSE](LICENSE).
-- **Map data**: tile files built from OpenStreetMap are a derived database under
-  the Open Database Licence (ODbL) 1.0. Credit **"© OpenStreetMap contributors"**
-  wherever a map is shown (the TileJSON carries it). Any tile file we publish
-  must be offered under the ODbL.
+- **Map data**: the underlying data is OpenStreetMap, under the Open Database
+  Licence (ODbL) 1.0. We treat the tile files and the maps rendered from them as
+  a Produced Work: credit **"© OpenStreetMap contributors"** wherever a map is
+  shown (the TileJSON carries it). Protomaps' own downloads name only that
+  attribution. Confirm the classification of the tile archive itself with
+  counsel before publishing it for download.
 - **Third-party styles, fonts and sprites** keep their upstream licences, listed
   in [NOTICE](NOTICE).
 

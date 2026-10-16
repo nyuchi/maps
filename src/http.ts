@@ -29,6 +29,34 @@ export function baseUrl(env: Env, requestUrl: string): string {
   return new URL(requestUrl).origin;
 }
 
+/**
+ * Response init that tells the Workers runtime NOT to compress a body that
+ * already carries a Content-Encoding. The default (encodeBody "automatic")
+ * would gzip a second time and the client could not parse the result.
+ * Every place that builds or rebuilds a response around stored-compressed
+ * bytes must go through this.
+ */
+export function responseInit(
+  status: number,
+  headers: Headers,
+  statusText?: string,
+): ResponseInit {
+  const init: ResponseInit = { status, headers };
+  if (statusText) init.statusText = statusText;
+  if (headers.has("Content-Encoding")) init.encodeBody = "manual";
+  return init;
+}
+
+/** Copy a response (for example from the Cache API) with mutable headers. */
+export function rebuild(res: Response): Response {
+  const headers = new Headers(res.headers);
+  return new Response(
+    res.body,
+    responseInit(res.status, headers, res.statusText),
+  );
+}
+
+/** JSON error. Cache-Control defaults to no-store unless the caller sets one. */
 export function jsonError(
   status: number,
   error: string,
@@ -36,7 +64,7 @@ export function jsonError(
 ): Response {
   const headers = new Headers(extra);
   headers.set("Content-Type", "application/json; charset=utf-8");
-  headers.set("Cache-Control", NO_STORE);
+  if (!headers.has("Cache-Control")) headers.set("Cache-Control", NO_STORE);
   return new Response(JSON.stringify({ error }), { status, headers });
 }
 

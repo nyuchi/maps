@@ -9,6 +9,8 @@ export interface Env {
   ALLOWED_ORIGINS?: string;
   /** Object key of the PMTiles archive in the bucket. */
   TILES_KEY?: string;
+  /** Bump when the archive is replaced: part of the edge cache key. */
+  TILES_VERSION?: string;
   /** Set to "off" to skip the Cache API (tests). */
   EDGE_CACHE?: string;
 }

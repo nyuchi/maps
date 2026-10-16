@@ -2,7 +2,7 @@ import {
   Compression,
   EtagMismatch,
   PMTiles,
-  SharedPromiseCache,
+  ResolvedValueCache,
   TileType,
   type Header,
   type RangeResponse,
@@ -52,25 +52,104 @@ class R2Source implements Source {
 }
 
 /**
- * Directory and header caches live per bucket binding, per isolate. The
- * header is read once and each directory once; the cache key includes the
- * archive ETag, so a replaced archive is picked up on the next mismatch.
+ * Directory and header caches live per bucket binding, per isolate.
+ *
+ * ResolvedValueCache, not SharedPromiseCache, on purpose: it stores only
+ * values that resolved. SharedPromiseCache stores the promise before it
+ * settles and never drops a rejection, so one missing archive or one
+ * transient R2 error would poison every later request in the isolate; it
+ * also shares promises between requests, which Workers cannot do (I/O
+ * belongs to the request that started it). Here a failure caches nothing and
+ * the next request simply tries again. The key includes the archive ETag, so
+ * a replaced archive is picked up on the next ETag mismatch.
  */
-const caches = new WeakMap<R2Bucket, SharedPromiseCache>();
+const archiveCaches = new WeakMap<R2Bucket, ResolvedValueCache>();
 
 /** Tile bytes are passed through still compressed (see tileEncoding). */
 const passThrough = async (buf: ArrayBuffer): Promise<ArrayBuffer> => buf;
 
-export function openArchive(env: Env, key: string): PMTiles {
-  let cache = caches.get(env.MAPS_BUCKET);
+function cacheFor(env: Env): ResolvedValueCache {
+  let cache = archiveCaches.get(env.MAPS_BUCKET);
   if (!cache) {
-    cache = new SharedPromiseCache(200);
-    caches.set(env.MAPS_BUCKET, cache);
+    cache = new ResolvedValueCache(200);
+    archiveCaches.set(env.MAPS_BUCKET, cache);
   }
+  return cache;
+}
+
+export function openArchive(env: Env, key: string): PMTiles {
   const source = new R2Source(env.MAPS_BUCKET, key);
-  // `cache` decompresses directories itself; this decompress only touches
+  // The cache decompresses directories itself; this decompress only touches
   // tile bytes, which the client can inflate.
-  return new PMTiles(source, cache, passThrough);
+  return new PMTiles(source, cacheFor(env), passThrough);
+}
+
+async function gunzip(bytes: ArrayBuffer): Promise<ArrayBuffer> {
+  const stream = new Blob([bytes])
+    .stream()
+    .pipeThrough(new DecompressionStream("gzip"));
+  return new Response(stream).arrayBuffer();
+}
+
+/**
+ * Parse the archive's JSON metadata block. Only none (1) and gzip (2) are
+ * handled; anything else yields null rather than an error, because metadata
+ * only enriches the TileJSON.
+ */
+export async function decodeMetadata(
+  bytes: ArrayBuffer,
+  compression: Compression,
+): Promise<Record<string, unknown> | null> {
+  try {
+    let raw = bytes;
+    if (compression === Compression.Gzip) raw = await gunzip(bytes);
+    else if (
+      compression !== Compression.None &&
+      compression !== Compression.Unknown
+    ) {
+      return null;
+    }
+    const parsed: unknown = JSON.parse(new TextDecoder().decode(raw));
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+const metadataCache = new WeakMap<
+  R2Bucket,
+  Map<string, Record<string, unknown> | null>
+>();
+
+/** `vector_layers` from the archive metadata, cached per archive ETag. */
+export async function vectorLayers(
+  env: Env,
+  key: string,
+  header: Header,
+): Promise<unknown[] | null> {
+  let perBucket = metadataCache.get(env.MAPS_BUCKET);
+  if (!perBucket) {
+    perBucket = new Map();
+    metadataCache.set(env.MAPS_BUCKET, perBucket);
+  }
+  const cacheKey = `${key}|${header.etag ?? ""}`;
+  let meta = perBucket.get(cacheKey);
+  if (meta === undefined) {
+    const source = new R2Source(env.MAPS_BUCKET, key);
+    const { data } = await source.getBytes(
+      header.jsonMetadataOffset,
+      header.jsonMetadataLength,
+      undefined,
+      header.etag,
+    );
+    meta = await decodeMetadata(data, header.internalCompression);
+    if (perBucket.size > 16) perBucket.clear();
+    perBucket.set(cacheKey, meta);
+  }
+  const layers = meta?.vector_layers;
+  return Array.isArray(layers) ? layers : null;
 }
 
 const EXT: Partial<Record<TileType, string>> = {

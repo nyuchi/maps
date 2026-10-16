@@ -5,6 +5,7 @@ import {
   ArchiveMissingError,
   UnsupportedCompressionError,
   openArchive,
+  vectorLayers,
   tileContentType,
   tileEncoding,
   tileExt,
@@ -21,8 +22,10 @@ import {
   etagMatches,
   jsonError,
   jsonResponse,
+  rebuild,
+  responseInit,
 } from "./http";
-import { rateLimit } from "./ratelimit";
+import { checkRateLimit, rateLimit } from "./ratelimit";
 import {
   DEFAULT_SOURCE_ID,
   SOURCES,
@@ -82,9 +85,14 @@ export function createApp(
 
   /** TileJSON 3.0.0 for one source, carrying its credits. */
   async function tileJson(c: Ctx, def: SourceDef): Promise<Response> {
-    const header = await openArchive(c.env, sourceKey(c.env, def)).getHeader();
+    const key = sourceKey(c.env, def);
+    const header = await openArchive(c.env, key).getHeader();
     const ext = tileExt(header);
     if (!ext) return jsonError(500, "unsupported_tile_type");
+    // Required by TileJSON 3.0.0 for vector tiles; read from the archive's
+    // own metadata block.
+    const layers =
+      ext === "mvt" ? await vectorLayers(c.env, key, header) : null;
     const base = baseUrl(c.env, c.req.url);
     const prefix =
       def.id === DEFAULT_SOURCE_ID
@@ -100,6 +108,7 @@ export function createApp(
             : `Nyuchi Maps ${def.id}`,
         scheme: "xyz",
         tiles: [`${prefix}/{z}/{x}/{y}.${ext}`],
+        ...(ext === "mvt" ? { vector_layers: layers ?? [] } : {}),
         attribution: attributionHtml(def.creditIds),
         minzoom: header.minZoom,
         maxzoom: header.maxZoom,
@@ -119,7 +128,13 @@ export function createApp(
     if (!req) return jsonError(400, "invalid_tile_coordinates");
 
     const edge = c.env.EDGE_CACHE === "off" ? null : caches.default;
-    const cacheKey = new Request(c.req.url, { method: "GET" });
+    // Key on origin + path + the archive version only: a query string must
+    // not bypass the cache, and bumping TILES_VERSION retires every cached
+    // tile of a replaced archive.
+    const url = new URL(c.req.url);
+    const cacheKey = new Request(
+      `${url.origin}${url.pathname}?v=${encodeURIComponent(c.env.TILES_VERSION ?? "")}`,
+    );
     if (edge) {
       const hit = await edge.match(cacheKey);
       if (hit) {
@@ -127,9 +142,13 @@ export function createApp(
         if (etag && etagMatches(c.req.header("If-None-Match"), etag)) {
           return new Response(null, { status: 304, headers: hit.headers });
         }
-        return hit;
+        return rebuild(hit);
       }
     }
+
+    // Only a miss costs the origin anything, so only a miss is limited.
+    const limited = await checkRateLimit(c);
+    if (limited) return limited;
 
     const archive = openArchive(c.env, sourceKey(c.env, def));
     const header = await archive.getHeader();
@@ -143,15 +162,6 @@ export function createApp(
       });
     }
 
-    const found = await archive.getZxy(req.z, req.x, req.y, c.req.raw.signal);
-    if (!found) {
-      // Inside the archive's zoom range but no data here (ocean, empty cell).
-      return new Response(null, {
-        status: 204,
-        headers: { "Cache-Control": CACHE_EMPTY },
-      });
-    }
-
     const encoding = tileEncoding(header);
     const headers = new Headers({
       "Content-Type": tileContentType(ext),
@@ -161,15 +171,32 @@ export function createApp(
     if (header.etag) {
       headers.set("ETag", `"${header.etag}:${req.z}/${req.x}/${req.y}"`);
     }
+    // The ETag is derived from the cached header, so a matching validator is
+    // answered before the directory or the tile is read from R2.
     const etag = headers.get("ETag");
     if (etag && etagMatches(c.req.header("If-None-Match"), etag)) {
       return new Response(null, { status: 304, headers });
     }
 
-    const res = new Response(found.data, { status: 200, headers });
+    const found = await archive.getZxy(req.z, req.x, req.y, c.req.raw.signal);
+    if (!found) {
+      // Inside the archive's zoom range but no data here (ocean, empty cell).
+      return new Response(null, {
+        status: 204,
+        headers: { "Cache-Control": CACHE_EMPTY },
+      });
+    }
+
+    const res = new Response(found.data, responseInit(200, headers));
     if (edge) {
       try {
-        c.executionCtx.waitUntil(edge.put(cacheKey, res.clone()));
+        // Not res.clone(): a clone does not keep encodeBody "manual", so the
+        // Cache API would gzip the already-gzipped bytes a second time.
+        const copy = new Response(
+          found.data,
+          responseInit(200, new Headers(headers)),
+        );
+        c.executionCtx.waitUntil(edge.put(cacheKey, copy));
       } catch {
         // No execution context (tests): skip the write.
       }
@@ -198,25 +225,38 @@ export function createApp(
     return def ? tile(c, def) : jsonError(404, "source_not_found");
   });
 
+  // Styles are pure functions of (name, base URL, lang): build each once.
+  const styleMemo = new Map<string, Record<string, unknown>>();
   app.get("/v1/styles/:file", async (c) => {
     const name = parseStyleFile(c.req.param("file"));
     const lang = parseLang(c.req.query("lang"));
     if (!lang) return jsonError(400, "invalid_lang");
-    const style = name && buildStyle(name, baseUrl(c.env, c.req.url), lang);
+    const base = baseUrl(c.env, c.req.url);
+    const memoKey = `${name}|${base}|${lang}`;
+    let style = name ? styleMemo.get(memoKey) : undefined;
+    if (!style && name) {
+      style = buildStyle(name, base, lang) ?? undefined;
+      if (style) {
+        if (styleMemo.size >= 64) styleMemo.clear();
+        styleMemo.set(memoKey, style);
+      }
+    }
     if (!style) return jsonError(404, "style_not_found");
     return jsonResponse(c, style, CACHE_ASSET);
   });
 
-  /** Stream an R2 object with ETag/304 handling. */
+  /**
+   * Stream an R2 object. R2 evaluates If-None-Match itself (onlyIf), so a
+   * matching validator never transfers the body.
+   */
   async function serveObject(
-    c: {
-      env: AppEnv["Bindings"];
-      req: { header(n: string): string | undefined };
-    },
+    c: Ctx,
     key: string,
     contentType: string,
   ): Promise<Response> {
-    const object = await c.env.MAPS_BUCKET.get(key);
+    const object = await c.env.MAPS_BUCKET.get(key, {
+      onlyIf: c.req.raw.headers,
+    });
     if (!object) {
       return jsonError(404, "not_found", { "Cache-Control": CACHE_MISS });
     }
@@ -225,8 +265,7 @@ export function createApp(
       "Cache-Control": CACHE_ASSET,
       ETag: object.httpEtag,
     });
-    if (etagMatches(c.req.header("If-None-Match"), object.httpEtag)) {
-      await object.body.cancel();
+    if (!("body" in object) || !object.body) {
       return new Response(null, { status: 304, headers });
     }
     return new Response(object.body, { status: 200, headers });

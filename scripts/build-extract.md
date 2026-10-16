@@ -55,14 +55,18 @@ brotli or zstd archives are refused with a 500.
 
 ## 5. Fonts and sprites
 
-The styles use the `Noto Sans Regular`, `Noto Sans Medium` and
-`Noto Sans Italic` font stacks and the `light` and `dark` sprites. Take the
+The styles use the `Noto Sans Regular`, `Noto Sans Medium`,
+`Noto Sans Italic` and `Noto Sans Devanagari Regular v1` font stacks and the
+`light` and `dark` sprites. Take the
 prebuilt glyph PBFs and sprites from
 <https://github.com/protomaps/basemaps-assets> (check their licence, see
 `NOTICE`) and lay them out as:
 
 ```text
+fonts/OFL.txt          (copy of licenses/OFL-1.1-Noto-Sans.txt)
 fonts/Noto Sans Regular/0-255.pbf ...
+fonts/Noto Sans Medium/...  fonts/Noto Sans Italic/...
+fonts/Noto Sans Devanagari Regular v1/...
 sprites/light.json   sprites/light.png   sprites/light@2x.json   sprites/light@2x.png
 sprites/dark.json    sprites/dark.png    sprites/dark@2x.json    sprites/dark@2x.png
 ```
@@ -82,7 +86,14 @@ need an S3-compatible client such as `rclone` instead of `wrangler`.
 
 ## Refreshing
 
-Rebuild from a newer `BUILD` date and upload over the same key. The Worker
-reads the archive by ETag, so a replaced object is picked up on the next
-mismatch; edge-cached tiles age out within their `s-maxage` (30 days). Purge
-the cache if the change must show sooner.
+Edge-cached tiles live for up to 30 days, so replacing the object alone leaves
+stale tiles in the cache. A refresh has three mandatory steps:
+
+1. Rebuild from a newer `BUILD` date and upload over the same key.
+2. Bump `TILES_VERSION` in `wrangler.jsonc` (for example `"2"`) and deploy. It
+   is part of the edge cache key, so every tile cached from the old archive is
+   retired at once.
+3. Check `GET /v1/tiles.json` and a few tiles.
+
+The Worker also notices the replaced object by ETag on its next range read, but
+that does not clear the Cache API; `TILES_VERSION` does.
