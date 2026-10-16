@@ -1,0 +1,65 @@
+Nyuchi Maps
+Copyright 2026 Nyuchi Africa (PVT) Ltd
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+It includes or depends on the third-party material below. Each keeps its own
+licence. Entries marked CONFIRM must be checked against the upstream licence
+file at the pinned version before the first public release.
+
+------------------------------------------------------------------------
+Map data
+------------------------------------------------------------------------
+
+OpenStreetMap data
+  (c) OpenStreetMap contributors
+  Licence: Open Database Licence (ODbL) 1.0
+  https://www.openstreetmap.org/copyright
+  Tile archives and maps built from OpenStreetMap are treated as a Produced
+  Work under the ODbL. Keep the credit "(c) OpenStreetMap contributors"
+  visible wherever a map is shown. Confirm with counsel before publishing a
+  tile file for download.
+
+Protomaps basemap builds (the PMTiles planet and regional extracts)
+  https://docs.protomaps.com/basemaps/downloads
+  OpenStreetMap-derived data: ODbL 1.0, as above.
+  Protomaps' download page names only OpenStreetMap attribution (an ODbL
+  Produced Work), so no Protomaps credit is listed. Re-check before release;
+  if the terms change add it to src/credits.ts (see the TODO there).
+
+------------------------------------------------------------------------
+Runtime dependencies (bundled into the Worker)
+------------------------------------------------------------------------
+
+pmtiles 4.5.0 (PMTiles v3 reader)
+  Copyright Protomaps LLC. Licence: BSD-3-Clause.
+  https://github.com/protomaps/PMTiles
+
+@protomaps/basemaps 5.7.2 (basemap style layers and flavors)
+  Copyright Protomaps LLC. Licence: BSD-3-Clause.
+  https://github.com/protomaps/basemaps
+  Our light and dark styles are generated from its layers and flavors.
+
+hono 4.x (HTTP router)
+  Copyright Yusuke Wada. Licence: MIT.
+  https://github.com/honojs/hono
+
+yaml 2.x (serves the OpenAPI document as JSON)
+  Copyright Eemeli Aro. Licence: ISC.
+  https://github.com/eemeli/yaml
+
+------------------------------------------------------------------------
+Assets stored in the R2 bucket (not in this repository)
+------------------------------------------------------------------------
+
+Glyph PBFs (fonts/) built from Noto Sans (Regular, Medium, Italic,
+Devanagari Regular)
+  Copyright The Noto Project Authors. Licence: SIL Open Font License 1.1.
+  The full licence text is licenses/OFL-1.1-Noto-Sans.txt; upload a copy to
+  the bucket as fonts/OFL.txt so it travels with the PBFs (OFL condition 2).
+  Source of the prebuilt PBFs: github.com/protomaps/basemaps-assets.
+  CONFIRM that repository's own licence for the glyph build and verify each
+  family's copyright line (the Devanagari family has its own) when the assets
+  are imported.
+
+Sprites (sprites/) from protomaps/basemaps-assets
+  CONFIRM licence when the assets are imported.

@@ -1,0 +1,36 @@
+{
+  "name": "nyuchi-maps",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Nyuchi Maps: the Nyuchi platform base-map service, a Cloudflare Worker serving PMTiles from R2",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "build": "wrangler deploy --dry-run --outdir dist",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "@protomaps/basemaps": "5.7.2",
+    "hono": "^4.13.12",
+    "pmtiles": "4.5.0",
+    "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.22.0",
+    "@cloudflare/workers-types": "^5.20261002.1",
+    "prettier": "^3.9.9",
+    "typescript": "^5.9.3",
+    "vitest": "~4.1.11",
+    "wrangler": "^4.147.0"
+  },
+  "overrides": {
+    "sharp@<0.35.4": "^0.35.4",
+    "undici@<7.29.1": "^7.29.1",
+    "sharp": "^0.35.5"
+  }
+}

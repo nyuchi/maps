@@ -1,0 +1,67 @@
+/**
+ * Nyuchi Maps: the Nyuchi platform base-map service.
+ *
+ * A thin Worker over ONE R2 bucket holding a PMTiles archive, glyph PBFs and
+ * sprites. Nothing here is created by this file: the bucket, the DNS record
+ * and the route are the owner's to provision. See docs/ARCHITECTURE.md.
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nyuchi-maps",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-01",
+
+  // No *.workers.dev URL and no per-version preview URLs: the Worker is
+  // reachable only through the route below, once the owner enables it.
+  "workers_dev": false,
+  "preview_urls": false,
+
+  // openapi/openapi.yaml is imported as text and served at /openapi.json.
+  "rules": [{ "type": "Text", "globs": ["**/*.yaml"], "fallthrough": true }],
+
+  // Not active until the maps.nyuchi.com DNS record exists. The owner
+  // uncomments this, then deploys.
+  // "routes": [{ "pattern": "maps.nyuchi.com", "custom_domain": true }],
+
+  "vars": {
+    // Public origin used in TileJSON and style URLs, without a trailing
+    // slash. maps.nyuchi.com is the owner-confirmed host. When this is unset
+    // or invalid the Worker falls back to the origin of the request.
+    "PUBLIC_BASE_URL": "https://maps.nyuchi.com",
+    // Comma-separated first-party origins allowed by CORS. A leading
+    // "*." label after the scheme matches any subdomain. Production only:
+    // for local development put ALLOWED_ORIGINS (with http://localhost:3000)
+    // in .dev.vars, see .dev.vars.example.
+    "ALLOWED_ORIGINS": "https://weather.mukoko.com,https://weatherstations.nyuchi.com",
+    // Object key of the PMTiles archive inside the bucket.
+    "TILES_KEY": "tiles/nyuchi-maps.pmtiles",
+    // Part of the edge cache key. Bump it (and deploy) whenever the archive
+    // object is replaced, so tiles cached from the old archive are retired.
+    "TILES_VERSION": "1",
+  },
+
+  // The binding NAME is what the code uses. The bucket does not exist yet:
+  // the name below is a placeholder to replace when the owner creates it.
+  "r2_buckets": [
+    {
+      "binding": "MAPS_BUCKET",
+      "bucket_name": "nyuchi-maps-placeholder",
+    },
+  ],
+
+  // Per-IP limit on /v1 routes; tiles are counted only on an edge-cache miss.
+  // namespace_id is ours to choose but must be unique in the Cloudflare
+  // account, and is not a resource to create first. 1001 is the Mukoko API's
+  // IP limiter, so this Worker uses 7402. Check it is free before deploying.
+  "ratelimits": [
+    {
+      "name": "RATE_LIMITER",
+      "namespace_id": "7402",
+      "simple": { "limit": 1800, "period": 60 },
+    },
+  ],
+
+  "observability": {
+    "enabled": true,
+  },
+}
