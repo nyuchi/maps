@@ -78,6 +78,11 @@ here, and the registry ships with the base map only. `createApp(sources)` takes
 the registry as a parameter, which is how the tests exercise a second source
 without registering one.
 
+The tile routes and TileJSON described here are the first slice's. The contract
+that replaces them (OGC API - Tiles as the canonical description, TileJSON
+derived from it, PMTiles as storage only) is
+[tile-contract.md](tile-contract.md); nothing in it is built yet.
+
 ## Styles, fonts, sprites and credits
 
 - **Styles** (`src/styles.ts`) are generated from `@protomaps/basemaps` layers,

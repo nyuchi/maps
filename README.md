@@ -17,6 +17,8 @@ owner provisions the DNS record.
 
 ## Routes
 
+These are the routes the first slice serves today. The contract that will replace the tile routes, written from OGC API - Tiles (decided, not built), is [docs/tile-contract.md](docs/tile-contract.md).
+
 | Route                                                            | What it serves                                                        |
 | ---------------------------------------------------------------- | --------------------------------------------------------------------- |
 | `GET /health`                                                    | Liveness, answered at the edge                                        |
