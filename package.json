@@ -1,6 +1,6 @@
 {
   "name": "nyuchi-maps",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "description": "Nyuchi Maps: the Nyuchi platform base-map service, a Cloudflare Worker serving PMTiles from R2",
   "license": "Apache-2.0",
@@ -30,7 +30,8 @@
   },
   "overrides": {
     "sharp@<0.35.4": "^0.35.4",
-    "undici@<7.29.1": "^7.29.1",
+    "undici@<7.30.2": "^7.30.2",
+    "zod@<4.6.7": "^4.6.7",
     "sharp": "^0.35.5"
   }
 }
