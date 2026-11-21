@@ -1,0 +1,344 @@
+openapi: 3.1.0
+info:
+  title: Nyuchi Maps
+  version: 0.0.1
+  summary: The Nyuchi platform base map.
+  description: |
+    Vector tiles, styles, glyphs and sprites for every Mukoko app and Nyuchi
+    product. Tiles are read from a single PMTiles archive (PMTiles v3) in R2
+    with HTTP range reads. Map data is derived from OpenStreetMap and is
+    available under the ODbL as a Produced Work; credits are carried by the
+    TileJSON and must be displayed by every map. Every `/v1` response carries
+    `Vary: Origin`; CORS is an allow-list of first-party origins.
+  license:
+    name: Apache-2.0
+    identifier: Apache-2.0
+servers:
+  - url: https://maps.nyuchi.com
+    description: Production host (not live until the owner enables the route).
+tags:
+  - name: Tiles
+  - name: Styles
+  - name: Assets
+  - name: Operations
+paths:
+  /health:
+    get:
+      tags: [Operations]
+      operationId: getHealth
+      summary: Liveness check, answered at the edge.
+      responses:
+        "200":
+          description: The Worker is running.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, service]
+                properties:
+                  status: {type: string, const: ok}
+                  service: {type: string, const: nyuchi-maps}
+  /openapi.json:
+    get:
+      tags: [Operations]
+      operationId: getOpenApi
+      summary: This document, as JSON.
+      responses:
+        "200":
+          description: The OpenAPI 3.1 document.
+          content:
+            application/json:
+              schema: {type: object}
+  /v1/tiles.json:
+    get:
+      tags: [Tiles]
+      operationId: getTileJson
+      summary: TileJSON 3.0.0 for the archive, including the credits.
+      responses:
+        "200":
+          description: TileJSON.
+          headers:
+            ETag: {$ref: "#/components/headers/ETag"}
+            Cache-Control: {$ref: "#/components/headers/CacheControl"}
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/TileJSON"}
+        "304": {$ref: "#/components/responses/NotModified"}
+        "429": {$ref: "#/components/responses/RateLimited"}
+        "503": {$ref: "#/components/responses/ArchiveUnavailable"}
+  /v1/tiles/{z}/{x}/{y}.{ext}:
+    get:
+      tags: [Tiles]
+      operationId: getTile
+      summary: One tile from the archive.
+      description: |
+        `ext` must match the archive's tile type (`mvt` for the Protomaps
+        basemap). The body is passed through still compressed and carries
+        `Content-Encoding: gzip` when the archive stores gzip tiles.
+        A tile the archive does not hold, inside its zoom range, is `204`.
+      parameters:
+        - {name: z, in: path, required: true, schema: {type: integer, minimum: 0, maximum: 22}}
+        - {name: x, in: path, required: true, schema: {type: integer, minimum: 0}}
+        - {name: y, in: path, required: true, schema: {type: integer, minimum: 0}}
+        - name: ext
+          in: path
+          required: true
+          schema: {type: string, enum: [mvt, png, jpg, webp, avif, mlt]}
+      responses:
+        "200":
+          description: The tile.
+          headers:
+            ETag: {$ref: "#/components/headers/ETag"}
+            Cache-Control: {$ref: "#/components/headers/CacheControl"}
+            Content-Encoding: {schema: {type: string, enum: [gzip]}}
+          content:
+            application/vnd.mapbox-vector-tile:
+              schema: {type: string, format: binary}
+            application/vnd.maplibre-vector-tile:
+              schema: {type: string, format: binary}
+            image/png:
+              schema: {type: string, format: binary}
+            image/jpeg:
+              schema: {type: string, format: binary}
+            image/webp:
+              schema: {type: string, format: binary}
+            image/avif:
+              schema: {type: string, format: binary}
+        "204":
+          description: No tile here (inside the archive's zoom range).
+        "304": {$ref: "#/components/responses/NotModified"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "429": {$ref: "#/components/responses/RateLimited"}
+        "503": {$ref: "#/components/responses/ArchiveUnavailable"}
+  /v1/sources/{source}/tiles.json:
+    get:
+      tags: [Tiles]
+      operationId: getSourceTileJson
+      summary: TileJSON for a registered tile source other than the base map.
+      description: |
+        The Worker serves several PMTiles archives, each a registered source.
+        The base map is the default source and also answers at `/v1/tiles.json`.
+      parameters:
+        - $ref: "#/components/parameters/Source"
+      responses:
+        "200":
+          description: TileJSON.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/TileJSON"}
+        "304": {$ref: "#/components/responses/NotModified"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "429": {$ref: "#/components/responses/RateLimited"}
+        "503": {$ref: "#/components/responses/ArchiveUnavailable"}
+  /v1/sources/{source}/tiles/{z}/{x}/{y}.{ext}:
+    get:
+      tags: [Tiles]
+      operationId: getSourceTile
+      summary: One tile from a registered tile source.
+      parameters:
+        - $ref: "#/components/parameters/Source"
+        - {name: z, in: path, required: true, schema: {type: integer, minimum: 0, maximum: 22}}
+        - {name: x, in: path, required: true, schema: {type: integer, minimum: 0}}
+        - {name: y, in: path, required: true, schema: {type: integer, minimum: 0}}
+        - name: ext
+          in: path
+          required: true
+          schema: {type: string, enum: [mvt, png, jpg, webp, avif, mlt]}
+      responses:
+        "200":
+          description: The tile (same headers and encoding as the base map tiles).
+          content:
+            application/vnd.mapbox-vector-tile:
+              schema: {type: string, format: binary}
+            application/vnd.maplibre-vector-tile:
+              schema: {type: string, format: binary}
+            image/png:
+              schema: {type: string, format: binary}
+            image/jpeg:
+              schema: {type: string, format: binary}
+            image/webp:
+              schema: {type: string, format: binary}
+            image/avif:
+              schema: {type: string, format: binary}
+        "204":
+          description: No tile here (inside the archive's zoom range).
+        "304": {$ref: "#/components/responses/NotModified"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "429": {$ref: "#/components/responses/RateLimited"}
+        "503": {$ref: "#/components/responses/ArchiveUnavailable"}
+  /v1/styles/{name}.json:
+    get:
+      tags: [Styles]
+      operationId: getStyle
+      summary: A MapLibre style that references only this service.
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema: {type: string, enum: [light, dark]}
+        - name: lang
+          in: query
+          required: false
+          description: Label language, an ISO 639 code. Default `en`.
+          schema: {type: string, pattern: "^[a-z]{2,3}$", default: en}
+      responses:
+        "200":
+          description: Style JSON (MapLibre / Mapbox style spec, version 8).
+          headers:
+            ETag: {$ref: "#/components/headers/ETag"}
+          content:
+            application/json:
+              schema: {type: object}
+        "304": {$ref: "#/components/responses/NotModified"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "429": {$ref: "#/components/responses/RateLimited"}
+  /v1/fonts/{stack}/{range}.pbf:
+    get:
+      tags: [Assets]
+      operationId: getGlyphs
+      summary: Glyph PBF for a font stack and Unicode range.
+      description: |
+        `stack` is one to four comma-separated font names; the first one the
+        bucket holds is served.
+      parameters:
+        - name: stack
+          in: path
+          required: true
+          schema: {type: string, examples: ["Noto Sans Regular"]}
+        - name: range
+          in: path
+          required: true
+          schema: {type: string, pattern: "^\\d{1,5}-\\d{1,5}$", examples: ["0-255"]}
+      responses:
+        "200":
+          description: Glyph data.
+          content:
+            application/x-protobuf:
+              schema: {type: string, format: binary}
+        "304": {$ref: "#/components/responses/NotModified"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "429": {$ref: "#/components/responses/RateLimited"}
+  /v1/sprites/{name}.{ext}:
+    get:
+      tags: [Assets]
+      operationId: getSprite
+      summary: Sprite sheet or index. Use `{name}@2x.{ext}` for high-DPI.
+      parameters:
+        - name: name
+          in: path
+          required: true
+          description: Sprite name, for example `light` or `dark`; append `@2x` for the high-DPI sheet.
+          schema: {type: string, pattern: "^[a-z][a-z0-9-]{0,31}(@2x)?$"}
+        - name: ext
+          in: path
+          required: true
+          schema: {type: string, enum: [json, png]}
+      responses:
+        "200":
+          description: The sprite index (json) or image (png).
+          content:
+            application/json:
+              schema: {type: object}
+            image/png:
+              schema: {type: string, format: binary}
+        "304": {$ref: "#/components/responses/NotModified"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "429": {$ref: "#/components/responses/RateLimited"}
+components:
+  parameters:
+    Source:
+      name: source
+      in: path
+      required: true
+      description: A registered tile source id (see src/sources.ts).
+      schema: {type: string, pattern: "^[a-z][a-z0-9-]{0,31}$", examples: [basemap]}
+  headers:
+    ETag:
+      description: Strong validator; send it back as `If-None-Match`.
+      schema: {type: string}
+    CacheControl:
+      description: Edge and browser caching policy.
+      schema: {type: string}
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: {type: string}
+    TileJSON:
+      description: TileJSON 3.0.0.
+      type: object
+      required: [tilejson, tiles, attribution]
+      properties:
+        tilejson: {type: string, const: 3.0.0}
+        name: {type: string}
+        scheme: {type: string, const: xyz}
+        tiles:
+          type: array
+          items: {type: string, format: uri-template}
+        attribution:
+          type: string
+          description: HTML credits. Maps must display this text.
+        vector_layers:
+          type: array
+          description: From the archive's metadata (empty when it has none).
+          items: {type: object}
+        minzoom: {type: integer}
+        maxzoom: {type: integer}
+        bounds:
+          type: array
+          items: {type: number}
+          minItems: 4
+          maxItems: 4
+        center:
+          type: array
+          items: {type: number}
+          minItems: 3
+          maxItems: 3
+      example:
+        tilejson: 3.0.0
+        name: Nyuchi Maps
+        scheme: xyz
+        tiles: ["https://maps.nyuchi.com/v1/tiles/{z}/{x}/{y}.mvt"]
+        attribution: >-
+          <a href="https://maps.nyuchi.com">Nyuchi Maps</a> |
+          <a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a>
+        minzoom: 0
+        maxzoom: 14
+        bounds: [25.2, -22.45, 33.1, -15.55]
+        center: [31.05, -17.83, 8]
+  responses:
+    NotModified:
+      description: The cached copy is current.
+    BadRequest:
+      description: A path or query value failed validation.
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+    NotFound:
+      description: |
+        Unknown path, style, source, font or sprite; a tile outside the
+        archive's zoom range or with an extension that does not match the
+        archive's tile type; or an object that is not in the bucket.
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+    RateLimited:
+      description: |
+        Too many requests from this IP. Retry after `Retry-After` seconds.
+        Tiles are counted only when they miss the edge cache.
+      headers:
+        Retry-After: {schema: {type: integer}}
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+    ArchiveUnavailable:
+      description: The PMTiles archive is not in the bucket.
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}

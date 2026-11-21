@@ -1,0 +1,70 @@
+{
+  "type": "FeatureCollection",
+  "name": "nyuchi-maps-first-slice",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Zimbabwe" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [25.2, -22.45],
+            [33.1, -22.45],
+            [33.1, -15.55],
+            [25.2, -15.55],
+            [25.2, -22.45]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Lusaka" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [28.1, -15.6],
+            [28.5, -15.6],
+            [28.5, -15.3],
+            [28.1, -15.3],
+            [28.1, -15.6]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Nairobi" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [36.6, -1.45],
+            [37.1, -1.45],
+            [37.1, -1.15],
+            [36.6, -1.15],
+            [36.6, -1.45]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Singapore" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [103.6, 1.15],
+            [104.1, 1.15],
+            [104.1, 1.5],
+            [103.6, 1.5],
+            [103.6, 1.15]
+          ]
+        ]
+      }
+    }
+  ]
+}
