@@ -1,0 +1,17 @@
+---
+// A pill copy button. Enhancement only: with no script it is hidden (the
+// text stays selectable). `text` copies a fixed string; `from` copies the
+// text of the element with that id (for content a script fills in).
+import Icon from "@bundu/ui/Icon.astro";
+interface Props {
+  text?: string;
+  from?: string;
+  label?: string;
+  /** What is copied, appended to the accessible name: "Copy base URL". */
+  about?: string;
+}
+const { text, from, label = "Copy", about } = Astro.props;
+---
+<button type="button" class="maps-copy" data-copy={text} data-copy-from={from} aria-label={about ? `${label} ${about}` : undefined}>
+  <Icon name="copy" class="maps-icon" /><span data-copy-label>{label}</span>
+</button>

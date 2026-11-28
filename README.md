@@ -40,25 +40,30 @@ new maplibregl.Map({
 });
 ```
 
-The page is not framed (`frame-ancestors 'none'`); embed by style URL, not by
-iframe. Its source is in [`web/`](web/); `public/` is generated from it (see
-Development) and committed.
+`/` is the developer dashboard, built with Astro from [`site/`](site/) on the
+Mzizi Dashboard Standard (`@bundu/ui`); `public/` is generated from it (see
+Development) and committed. Pages: Overview, Explorer (the live map, the page
+this section used to describe), Embed builder, Endpoints, Docs and Status. Keys
+and usage are not built here: they live in the Nyuchi Console. The map pages are
+not framed (`frame-ancestors 'none'`); `/embed/` is the one page other sites may
+frame, and only the origins in `ALLOWED_ORIGINS` (plus this site) may.
 
 ## Routes
 
 These are the routes the first slice serves today. The contract that will replace the tile routes, written from OGC API - Tiles (decided, not built), is [docs/tile-contract.md](docs/tile-contract.md).
 
-| Route                                                            | What it serves                                                           |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `GET /`                                                          | The map page (HTML), with its `/assets/*`, `/favicon.svg`, `/robots.txt` |
-| `GET /health`                                                    | Liveness, answered at the edge                                           |
-| `GET /openapi.json`                                              | The OpenAPI 3.1 contract ([`openapi/`](openapi/))                        |
-| `GET /v1/tiles.json`                                             | TileJSON 3.0.0 for the archive, with the credits                         |
-| `GET /v1/tiles/{z}/{x}/{y}.mvt`                                  | One tile (the extension follows the archive's tile type)                 |
-| `GET /v1/sources/{id}/tiles.json`, `.../tiles/{z}/{x}/{y}.{ext}` | Any further registered tile source (none ships yet; see architecture)    |
-| `GET /v1/styles/{light,dark}.json`                               | MapLibre styles that reference only our tiles, fonts, icons              |
-| `GET /v1/fonts/{stack}/{range}.pbf`                              | Glyph PBFs from the bucket                                               |
-| `GET /v1/sprites/{name}[@2x].{json,png}`                         | Sprite index and sheets from the bucket                                  |
+| Route                                                                         | What it serves                                                               |
+| ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `GET /`, `/explorer/`, `/endpoints/`, `/embed-builder/`, `/docs/`, `/status/` | The dashboard pages (HTML), with `/assets/*`, `/favicon*.png`, `/robots.txt` |
+| `GET /embed/`                                                                 | The embeddable map, framed only by `ALLOWED_ORIGINS` and this site           |
+| `GET /health`                                                                 | Liveness, answered at the edge                                               |
+| `GET /openapi.json`                                                           | The OpenAPI 3.1 contract ([`openapi/`](openapi/))                            |
+| `GET /v1/tiles.json`                                                          | TileJSON 3.0.0 for the archive, with the credits                             |
+| `GET /v1/tiles/{z}/{x}/{y}.mvt`                                               | One tile (the extension follows the archive's tile type)                     |
+| `GET /v1/sources/{id}/tiles.json`, `.../tiles/{z}/{x}/{y}.{ext}`              | Any further registered tile source (none ships yet; see architecture)        |
+| `GET /v1/styles/{light,dark}.json`                                            | MapLibre styles that reference only our tiles, fonts, icons                  |
+| `GET /v1/fonts/{stack}/{range}.pbf`                                           | Glyph PBFs from the bucket                                                   |
+| `GET /v1/sprites/{name}[@2x].{json,png}`                                      | Sprite index and sheets from the bucket                                      |
 
 Behaviour worth knowing:
 
@@ -130,10 +135,11 @@ maximum zoom 14, measured from the real extract).
 
 ```sh
 npm ci
+npm ci --prefix site   # Astro, for the dashboard only
 npm test            # Workers Vitest suite, stubbed R2 and rate limiter
 npm run typecheck
 npm run build       # check:web, then wrangler deploy --dry-run: deploys nothing
-npm run build:web   # regenerate public/ from web/ and the pinned maplibre-gl
+npm run build:web   # regenerate public/ from site/ (Astro) and the pinned maplibre-gl
 npm run check:web   # fail if public/ is stale (part of build, so part of CI)
 npm run dev         # wrangler dev (needs a local R2 archive)
 ```

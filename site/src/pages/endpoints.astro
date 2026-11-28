@@ -1,0 +1,130 @@
+---
+import Alert from "@bundu/ui/app/Alert.astro";
+import Badge from "@bundu/ui/app/Badge.astro";
+import Card from "@bundu/ui/app/Card.astro";
+import DataTable from "@bundu/ui/app/DataTable.astro";
+import PageHeader from "@bundu/ui/app/PageHeader.astro";
+import Code from "../components/Code.astro";
+import Copy from "../components/Copy.astro";
+import Shell from "../layouts/Shell.astro";
+import { API_BADGE, MAPS_API_BASE, MAPS_API_ENABLED, SITE_ORIGIN } from "../config";
+
+const STATE = MAPS_API_ENABLED ? "Available" : "Planned";
+const rows = [
+  ["TileJSON", "Describes the tiles and carries the credits", "/tiles.json", "JSON"],
+  ["XYZ tile", "Vector tiles, gzip", "/tiles/{z}/{x}/{y}.mvt", "MVT"],
+  ["Light style", "A MapLibre style", "/styles/light.json", "Style"],
+  ["Dark style", "A MapLibre style", "/styles/dark.json", "Style"],
+  ["Glyphs", "Font stacks, 256-glyph ranges", "/fonts/{stack}/{range}.pbf", "PBF"],
+  ["Sprites", "Icon sheet and index, with @2x", "/sprites/{name}[@2x].{json,png}", "Sprite"],
+].map(([name, sub, path, kind]) => ({
+  name: { text: name, sub },
+  url: { text: path, mono: true },
+  kind: { text: kind, badge: "secondary" as const },
+  state: { text: STATE, badge: "secondary" as const },
+}));
+
+const origin = [
+  ["TileJSON", "/v1/tiles.json"],
+  ["XYZ tile", "/v1/tiles/{z}/{x}/{y}.mvt"],
+  ["Styles", "/v1/styles/{light,dark}.json"],
+  ["Glyphs", "/v1/fonts/{stack}/{range}.pbf"],
+  ["Sprites", "/v1/sprites/{name}[@2x].{json,png}"],
+  ["Health", "/health"],
+  ["OpenAPI", "/openapi.json"],
+].map(([name, path]) => ({
+  name: { text: name },
+  url: { text: `${SITE_ORIGIN}${path}`, mono: true },
+}));
+
+const STYLE = `${MAPS_API_BASE}/styles/light.json?key=YOUR_KEY`;
+const snippets: [string, string, string][] = [
+  [
+    "MapLibre GL JS",
+    "js",
+    `import maplibregl from "maplibre-gl";\nimport "maplibre-gl/dist/maplibre-gl.css";\n\nnew maplibregl.Map({\n  container: "map",\n  style: "${STYLE}",\n  center: [31.05, -17.83],\n  zoom: 11,\n});`,
+  ],
+  [
+    "Leaflet",
+    "js",
+    `// Vector tiles in Leaflet need the MapLibre adapter:\n//   npm install leaflet maplibre-gl @maplibre/maplibre-gl-leaflet\nimport * as L from "leaflet";\nimport { maplibreGL } from "@maplibre/maplibre-gl-leaflet";\nimport "leaflet/dist/leaflet.css";\nimport "maplibre-gl/dist/maplibre-gl.css";\n\nconst map = L.map("map").setView([-17.83, 31.05], 11);\nmaplibreGL({ style: "${STYLE}" }).addTo(map);`,
+  ],
+  [
+    "OpenLayers",
+    "js",
+    `// npm install ol ol-mapbox-style\nimport { apply } from "ol-mapbox-style";\nimport { fromLonLat } from "ol/proj";\n\nconst map = await apply("map", "${STYLE}");\nmap.getView().setCenter(fromLonLat([31.05, -17.83]));\nmap.getView().setZoom(11);`,
+  ],
+  [
+    "curl",
+    "sh",
+    `# From a server, with a secret key pair. Never put the secret in a web page.\ncurl -s \\\n  -H "X-Client-Id: $NYUCHI_CLIENT_ID" -H "X-Client-Secret: $NYUCHI_CLIENT_SECRET" \\\n  "${MAPS_API_BASE}/tiles.json"\n\ncurl -s --compressed -o tile.mvt \\\n  -H "X-Client-Id: $NYUCHI_CLIENT_ID" -H "X-Client-Secret: $NYUCHI_CLIENT_SECRET" \\\n  "${MAPS_API_BASE}/tiles/6/37/35.mvt"`,
+  ],
+];
+---
+<Shell
+  title="Endpoints"
+  current="/endpoints/"
+  description="The Nyuchi Maps endpoints and the code to start with."
+>
+  <PageHeader
+    title="Endpoints"
+    description="What an application needs to draw our map, and code to start with."
+    docsHref="/docs/"
+  />
+
+  {!MAPS_API_ENABLED && (
+    <Alert variant="warning" title="These API addresses are planned, not live">
+      <p>The public Maps API is not enabled yet, so the api.nyuchi.com addresses below do not answer and the snippets cannot run. They show what you will use. The addresses that work today are on this site's origin, listed at the end of the page; they are not the public API.</p>
+    </Alert>
+  )}
+
+  <Card padding="md" class="flex flex-wrap items-center justify-between gap-[14px]">
+    <div class="min-w-0">
+      <div class="flex flex-wrap items-center gap-[9px]">
+        <p class="text-body-sm text-muted-foreground">Base URL</p>
+        <Badge variant="secondary">{API_BADGE}</Badge>
+      </div>
+      <p class="mt-1 font-mono text-body break-all">{MAPS_API_BASE}</p>
+      <p class="mt-2 max-w-prose text-body-sm text-muted-foreground">Served by api.nyuchi.com with your Nyuchi key. maps.nyuchi.com is this dashboard and the tile origin behind the API, not a second API.</p>
+    </div>
+    <Copy text={MAPS_API_BASE} label="Copy" about="base URL" />
+  </Card>
+
+  <DataTable
+    caption="Maps API resources, paths relative to the base URL"
+    showCaption
+    columns={[
+      { key: "name", label: "Resource" },
+      { key: "url", label: "Path" },
+      { key: "kind", label: "Format" },
+      { key: "state", label: "Status" },
+    ]}
+    rows={rows}
+    rowKey="url"
+  />
+
+  <Card padding="md" class="grid gap-[14px]">
+    <div class="flex flex-wrap items-center gap-[9px]">
+      <h2 class="text-body font-semibold">Snippets</h2>
+      <Badge variant="secondary">{API_BADGE}</Badge>
+    </div>
+    <p class="max-w-prose text-body-sm text-muted-foreground">Replace YOUR_KEY with a publishable key from the Nyuchi Console when keys are issued. Libraries that read the style or the TileJSON show the credit for you. If you draw tiles another way, show the credit text from the TileJSON's <code class="font-mono">attribution</code> field: it is a licence condition, and you should never retype it.</p>
+    {snippets.map(([name, lang, code], i) => (
+      <details class="maps-snip" name="snippet" open={i === 0}>
+        <summary class="inline-flex h-8 items-center rounded-full bg-muted px-4 text-body-sm font-medium pointer-coarse:h-11">{name}</summary>
+        <div class="mt-3"><Code code={code} lang={lang} about={`${name} snippet`} /></div>
+      </details>
+    ))}
+  </Card>
+
+  <Card padding="md" class="grid gap-[14px]">
+    <h2 class="text-body font-semibold">What this site serves today</h2>
+    <p class="max-w-prose text-body-sm text-muted-foreground">The dashboard reads these addresses on this origin. They are the origin behind the API, open only to Nyuchi's own sites, and not for you to build on.</p>
+    <DataTable
+      caption="Addresses on this origin"
+      columns={[{ key: "name", label: "Resource" }, { key: "url", label: "Address" }]}
+      rows={origin}
+      rowKey="url"
+    />
+  </Card>
+</Shell>

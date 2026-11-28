@@ -1,0 +1,367 @@
+/*
+ * The map, its controls and the code blocks. Colours are Mzizi semantic
+ * tokens (--card, --foreground, --border, --ring), so light and dark follow the
+ * dashboard theme. The floors below are the Bundu floor for the map's own
+ * controls (mzizi get_tokens family=floors): 45px hit region on touch and 24px
+ * on a desktop, 17px/15px text, 1.5 leading, 14px inset, 9px between controls.
+ */
+
+:root {
+  --hit: 45px;
+  --body: 17px;
+  /* How big a control is DRAWN. The hit region (--hit) stays 45px on touch: the
+     ::after below grows it past the drawn edge. 36px plus the 9px gap is the
+     45px pitch. */
+  --drawn: 36px;
+  --leading-floor: 1.5;
+  --inset-floor: 14px;
+  --space-control-between: 9px;
+}
+
+/* Desktop tier: a fine pointer with hover, 64rem and up, no coarse pointer. */
+@media (min-width: 64rem) and (hover: hover) and (pointer: fine) and (not (any-pointer: coarse)) {
+  :root {
+    --hit: 24px;
+    --drawn: 32px;
+    --body: 15px;
+  }
+}
+
+/* ---- The map frame ---------------------------------------------------- */
+
+.maps-frame {
+  --surface: var(--card);
+  --text: var(--foreground);
+  --edge: var(--border);
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--muted);
+  box-shadow: var(--maps-elev-1);
+  isolation: isolate;
+}
+.maps-frame .map-canvas {
+  position: absolute;
+  inset: 0;
+}
+.maps-frame.maps-frame--bare {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* The map is the page: a focus ring that shows on every tile colour. */
+.maps-frame :focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Round, soft map controls. */
+.maps-frame .maplibregl-ctrl-top-right {
+  top: var(--inset-floor);
+  right: var(--inset-floor);
+}
+.maps-frame .maplibregl-ctrl-top-right .maplibregl-ctrl {
+  margin: 0 0 var(--space-control-between) 0;
+}
+.maps-frame .maplibregl-ctrl-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-control-between);
+  background: none;
+  box-shadow: none;
+}
+.maps-frame .maplibregl-ctrl-group button,
+.maps-frame .maplibregl-ctrl-group button + button {
+  position: relative;
+  width: var(--drawn);
+  height: var(--drawn);
+  border: 0;
+  border-radius: 9999px;
+  background-color: var(--surface);
+  box-shadow: var(--maps-elev-2);
+}
+.maps-frame .maplibregl-ctrl-group button:hover:not(:disabled) {
+  background-color: var(--muted);
+}
+/* Dense controls keep the full hit region: grow it past the drawn edge. */
+.maps-frame .maplibregl-ctrl-group button::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, var(--hit));
+  height: max(100%, var(--hit));
+  transform: translate(-50%, -50%);
+}
+.maps-frame .maplibregl-ctrl button .maplibregl-ctrl-icon {
+  background-size: 20px;
+}
+[data-theme="dark"] .maps-frame .maplibregl-ctrl-icon {
+  filter: invert(1);
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]) .maps-frame .maplibregl-ctrl-icon {
+    filter: invert(1);
+  }
+}
+
+/* The scale is text only: no box, no fill, just the line and its label,
+   outlined in the surface colour so it reads on any map colour. */
+.maps-frame .maplibregl-ctrl-bottom-left {
+  left: var(--inset-floor);
+  bottom: var(--inset-floor);
+}
+.maps-frame .maplibregl-ctrl-bottom-left .maplibregl-ctrl {
+  margin: 0;
+}
+.maps-frame .maplibregl-ctrl-scale {
+  box-sizing: content-box;
+  /* mzizi-spacing-exempt: the scale is a text line on the map, not a control: its box is the label. */
+  padding: 0 var(--space-control-between);
+  border: 2px solid var(--text);
+  border-top: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: var(--leading-floor);
+  text-shadow:
+    -1.5px -1.5px 0 var(--surface),
+    1.5px -1.5px 0 var(--surface),
+    -1.5px 1.5px 0 var(--surface),
+    1.5px 1.5px 0 var(--surface),
+    0 -1.5px 0 var(--surface),
+    0 1.5px 0 var(--surface),
+    -1.5px 0 0 var(--surface),
+    1.5px 0 0 var(--surface);
+}
+
+/* The credits sit behind a small (i), closed when the page opens; one tap
+   shows the line. The ODbL asks for the credits wherever a map is shown: they
+   are one tap away, never removed. Their text comes from the TileJSON, never
+   from this file. */
+.maps-frame .maplibregl-ctrl-bottom-right {
+  right: var(--inset-floor);
+  bottom: var(--inset-floor);
+}
+.maps-frame .maplibregl-ctrl-bottom-right .maplibregl-ctrl {
+  margin: 0;
+}
+.maps-frame .maplibregl-ctrl.maplibregl-ctrl-attrib {
+  position: relative;
+  box-sizing: border-box;
+  min-width: var(--hit);
+  min-height: var(--hit);
+  /* mzizi-spacing-exempt: the credits (i) is a button whose hit region is the whole box; the glyph is drawn inside it. */
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--text);
+  font-size: 15px;
+  line-height: var(--leading-floor);
+  max-width: calc(100% - 2 * var(--inset-floor));
+}
+.maps-frame .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button {
+  top: 0;
+  right: 0;
+  width: var(--hit);
+  height: var(--hit);
+  border-radius: 9999px;
+  background-color: transparent;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 20px;
+  opacity: 0.85;
+}
+[data-theme="dark"] .maps-frame .maplibregl-ctrl-attrib-button {
+  filter: invert(1);
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]) .maps-frame .maplibregl-ctrl-attrib-button {
+    filter: invert(1);
+  }
+}
+.maps-frame .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button:hover {
+  opacity: 1;
+  background-color: color-mix(in srgb, var(--surface) 80%, transparent);
+}
+.maps-frame .maplibregl-ctrl.maplibregl-ctrl-attrib.maplibregl-compact-show {
+  display: flex;
+  align-items: center;
+  /* mzizi-spacing-exempt: the open credits line keeps room for the (i) on the right; links carry their own hit region. */
+  padding: 0 var(--hit) 0 var(--space-control-between);
+  background: var(--surface);
+  box-shadow: var(--maps-elev-2);
+}
+.maps-frame .maplibregl-ctrl-attrib a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hit);
+  /* mzizi-spacing-exempt: each credit link is a full-height hit region; the 4px only separates the underline. */
+  padding: 0 4px;
+  color: var(--text);
+  text-decoration: underline;
+}
+.maps-frame .maplibregl-ctrl-attrib-inner {
+  display: flex;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  align-items: center;
+  /* mzizi-spacing-exempt: the credits are one line of text; separators are plain text. */
+  gap: 0;
+}
+
+/* The status message over the map. */
+.maps-status {
+  position: absolute;
+  z-index: 3;
+  left: var(--inset-floor);
+  right: var(--inset-floor);
+  bottom: calc(var(--inset-floor) + var(--hit) + var(--space-control-between));
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: var(--inset-floor);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: var(--maps-elev-2);
+}
+.maps-status[hidden] {
+  display: none;
+}
+.maps-status p {
+  margin: 0 0 var(--space-control-between);
+}
+
+/* Readout under or over the map (centre and zoom). */
+.maps-readout {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Code blocks and the copy pill ------------------------------------ */
+
+.maps-code {
+  min-width: 0;
+  max-width: 100%;
+  position: relative;
+  border-radius: var(--radius-lg);
+  background: var(--muted);
+}
+.maps-code pre {
+  margin: 0;
+  padding: 14px 112px 14px 14px;
+  overflow-x: auto;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+.maps-code code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.maps-code .maps-copy {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+}
+.maps-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 2rem;
+  padding: 7px 14px;
+  white-space: nowrap;
+  border-radius: 9999px;
+  border: 0;
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: var(--maps-elev-1);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+}
+.maps-copy::after {
+  content: "";
+  position: absolute;
+  inset: -6px -2px;
+}
+.maps-copy:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+@media (pointer: coarse) {
+  .maps-copy {
+    height: 2.75rem;
+  }
+}
+/* The copy pill is a script enhancement; with no script it would do nothing. */
+html:not([data-js]) .maps-copy {
+  display: none;
+}
+
+/* A tabbed picker with no script: exclusive <details>, drawn as pills. */
+.maps-snip > summary {
+  list-style: none;
+  cursor: pointer;
+}
+.maps-snip > summary::-webkit-details-marker {
+  display: none;
+}
+.maps-snip > summary:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.maps-snip[open] > summary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+/* A glyph inside a button; the button carries the hit region. */
+/* mzizi-spacing-exempt: a 16px glyph inside a button; the button carries the hit region. */
+.maps-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Coverage drawing (Overview): outlines of the stored areas. */
+.maps-coverage {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-lg);
+  background: var(--muted);
+}
+.maps-coverage .area {
+  fill: color-mix(in oklab, var(--color-gold-brand) 24%, transparent);
+  stroke: var(--primary);
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+}
+.maps-coverage .frame {
+  fill: none;
+  stroke: var(--muted-foreground);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  vector-effect: non-scaling-stroke;
+}
+.maps-coverage .grid {
+  stroke: var(--border);
+  stroke-width: 0.75;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Embed preview frame. */
+.maps-embed-frame {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--muted);
+}
+
+/* Live values show a quiet dash until the script fills them. */
+[data-live][data-state="loading"] {
+  color: var(--muted-foreground);
+}

@@ -1,0 +1,4 @@
+# The dashboard is for people. The /v1 API is for apps; see /openapi.json.
+User-agent: *
+Disallow: /v1/
+Disallow: /embed/

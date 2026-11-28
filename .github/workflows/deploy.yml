@@ -46,6 +46,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci
+      - run: npm ci --prefix site
       - run: npm test
       - run: npm run typecheck
       # Bundles the Worker exactly as a deploy would, without deploying.

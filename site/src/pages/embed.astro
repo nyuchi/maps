@@ -1,0 +1,29 @@
+---
+// The embeddable map. Not part of the dashboard frame: one map, no chrome.
+// The Worker answers this path itself and sends a frame-ancestors policy that
+// is the gate for who may embed it (src/web.ts). Nothing in the address can
+// widen that policy, and no parameter hides the credits.
+import "../styles/global.css";
+import { MAPLIBRE_BASE } from "../lib/maplibre";
+---
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Map · Nyuchi Maps</title>
+    <link rel="stylesheet" href={`${MAPLIBRE_BASE}/maplibre-gl.css`} />
+    <link rel="modulepreload" href={`${MAPLIBRE_BASE}/maplibre-gl.mjs`} />
+  </head>
+  <body class="bg-background text-foreground antialiased">
+    <div class="maps-frame maps-frame--bare h-dvh">
+      <div id="map" class="map-canvas" role="region" aria-label="Map"></div>
+      <noscript><p class="maps-status">The map needs JavaScript.</p></noscript>
+    </div>
+    <script>
+      import "../scripts/embed.js";
+    </script>
+  </body>
+</html>

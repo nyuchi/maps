@@ -1,0 +1,27 @@
+{
+  "name": "nyuchi-maps-site",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Nyuchi Maps dashboard and embed page, built to ../public by scripts/build-web.mjs",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "build": "astro build",
+    "check": "astro check",
+    "gen:radix": "node scripts/gen-radix.mjs"
+  },
+  "dependencies": {
+    "@bundu/ui": "0.17.0",
+    "@tailwindcss/vite": "4.3.5",
+    "astro": "7.4.13",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "tailwind-merge": "3.7.1",
+    "tailwindcss": "4.3.5"
+  },
+  "devDependencies": {
+    "@radix-ui/react-icons": "1.3.2",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  }
+}

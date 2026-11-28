@@ -1,0 +1,52 @@
+---
+import Alert from "@bundu/ui/app/Alert.astro";
+import Card from "@bundu/ui/app/Card.astro";
+import PageHeader from "@bundu/ui/app/PageHeader.astro";
+import Icon from "@bundu/ui/Icon.astro";
+import Shell from "../layouts/Shell.astro";
+import { PLATFORM_STATUS_URL } from "../config";
+const columns = ["Check", "Result", "Response", "Time", "Cache-Control"];
+---
+<Shell
+  title="Status"
+  current="/status/"
+  description="Live checks of the Nyuchi Maps service, measured from your browser."
+>
+  <PageHeader
+    title="Status"
+    description="Live checks of this service, run from your browser each time you open the page."
+    docsHref="/docs/"
+  />
+
+  <Card padding="md" class="flex flex-wrap items-center justify-between gap-[14px]">
+    <div>
+      <p id="summary" role="status" class="text-body font-semibold">Checking…</p>
+      <p class="text-body-sm text-muted-foreground">Last checked at <span id="when">…</span>, from your browser.</p>
+    </div>
+    <button id="again" type="button" class="inline-flex h-9 items-center gap-[9px] rounded-sm border border-border bg-card px-[17px] text-body-sm font-medium hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 pointer-coarse:h-12 pointer-coarse:px-5">
+      <Icon name="refresh" class="maps-icon" />Check again
+    </button>
+  </Card>
+
+  <div class="overflow-hidden rounded-md border border-border bg-card" data-slot="data-table">
+    <table class="w-full border-collapse text-body-sm">
+      <caption class="px-3.5 py-2 text-start text-caption text-muted-foreground">Checks of this service</caption>
+      <thead class="hidden border-b border-border bg-surface-muted md:table-header-group">
+        <tr>
+          {columns.map((c) => <th scope="col" class="h-9 px-3.5 text-start text-caption font-medium text-muted-foreground">{c}</th>)}
+        </tr>
+      </thead>
+      <tbody id="checks" class="divide-y divide-border">
+        <tr><td colspan="5" class="px-3.5 py-3 text-muted-foreground">Checking…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <Alert variant="info" title="What this page is">
+    <p>Each row is a real request from your browser to this service, with the time it took and the headers that came back. It is a spot check, not a monitor: it keeps no history and says nothing about other places or other times. Status for the Nyuchi platform as a whole is at <a class="underline underline-offset-4" href={PLATFORM_STATUS_URL}>status.nyuchi.com</a>.</p>
+  </Alert>
+</Shell>
+
+<script>
+  import "../scripts/status.js";
+</script>
