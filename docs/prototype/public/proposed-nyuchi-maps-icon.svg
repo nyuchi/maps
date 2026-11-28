@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Nyuchi Maps (proposed)">
+  <!-- PROPOSAL for the owner to approve. Colours: Mzizi gold brand fill and gold on-brand text. -->
+  <defs><clipPath id="t"><rect width="128" height="128" rx="28"/></clipPath></defs>
+  <rect width="128" height="128" rx="28" fill="#ffd740"/>
+  <g clip-path="url(#t)" stroke="#3e2723" stroke-opacity=".18" stroke-width="2">
+    <path d="M32 0v128M64 0v128M96 0v128M0 32h128M0 64h128M0 96h128"/>
+  </g>
+  <path fill="#3e2723" fill-rule="evenodd" d="M64 20c-18.2 0-33 14.4-33 32.2 0 22.6 33 56.8 33 56.8s33-34.2 33-56.8C97 34.4 82.2 20 64 20zm0 46a13.5 13.5 0 1 1 0-27 13.5 13.5 0 0 1 0 27z"/>
+</svg>

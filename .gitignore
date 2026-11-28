@@ -4,3 +4,10 @@ node_modules/
 .dev.vars*
 !.dev.vars.example
 dist/
+
+# Design prototype (docs/prototype): generated, not shipped by the Worker.
+docs/prototype/node_modules/
+docs/prototype/dist/
+docs/prototype/.astro/
+docs/prototype/public/vendor/
+docs/prototype/public/data/

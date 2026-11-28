@@ -1,0 +1,69 @@
+---
+import "../styles/global.css";
+import AccountMenu from "@bundu/ui/app/AccountMenu.astro";
+import AppShell from "@bundu/ui/app/AppShell.astro";
+import CommandPalette from "@bundu/ui/app/CommandPalette.astro";
+import QuickSearch from "@bundu/ui/app/QuickSearch.astro";
+import SideNav from "@bundu/ui/app/SideNav.astro";
+import TopBarAction from "@bundu/ui/app/TopBarAction.astro";
+import WorkspaceSwitcher from "@bundu/ui/app/WorkspaceSwitcher.astro";
+import { groupNav } from "@bundu/ui/app/nav";
+import Wordmark from "../components/Wordmark.astro";
+import BottomNav from "../components/BottomNav.astro";
+import ThemeToggle from "../components/ThemeToggle.astro";
+import { NAV } from "../lib";
+
+const { title, current } = Astro.props;
+const groups = groupNav(NAV.map((n) => ({ ...n })), ["Maps", "Build", "Manage", "Learn"]);
+const phone = [
+  { href: "/", label: "Overview", icon: "home" },
+  { href: "/explorer/", label: "Explorer", icon: "map-pin" },
+  { href: "/keys/#new", label: "Create a key", icon: "plus", fab: true },
+  { href: "/embed/", label: "Embed", icon: "code" },
+  { href: "/keys/", label: "API keys", icon: "key" },
+];
+const footerLinks = [
+  { label: "Support", href: "mailto:support@nyuchi.com" },
+  { label: "System status", href: "https://status.nyuchi.com" },
+  { label: "Documentation", href: "https://docs.nyuchi.com" },
+  { label: "OpenStreetMap credits", href: "https://www.openstreetmap.org/copyright" },
+];
+---
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <title>{title} · Nyuchi Maps</title>
+    <link rel="icon" href="/favicon.png" type="image/png" media="(prefers-color-scheme: light)" />
+    <link rel="icon" href="/favicon-dark.png" type="image/png" media="(prefers-color-scheme: dark)" />
+    <link rel="stylesheet" href="/vendor/maplibre-gl/maplibre-gl.css" />
+    <script is:inline src="/theme.js"></script>
+  </head>
+  <body class="min-h-dvh bg-background text-foreground antialiased">
+    <a href="#main" class="sr-only z-50 rounded-md bg-foreground px-4 py-3 text-background focus:not-sr-only focus:fixed focus:top-4 focus:left-4">Skip to content</a>
+    <AppShell accent="gold" navLabel="Navigation" footerLinks={footerLinks} id="console">
+      <WorkspaceSwitcher slot="workspace" name="Nyuchi Africa" href="/" label="Switch organisation"
+        workspaces={[{ name: "Nyuchi Africa", href: "/", current: true, note: "Organisation" }]}
+        links={[{ label: "Console home", href: "https://platform.nyuchi.com/dashboard" }]}>
+        <Wordmark slot="mark" size={32} />
+      </WorkspaceSwitcher>
+      <QuickSearch slot="search" target="console-palette" />
+      <SideNav slot="nav" groups={groups} label="Maps" idPrefix="maps-nav" current={current} />
+      <Wordmark slot="brand" size={28} />
+      <Fragment slot="actions">
+        <TopBarAction label="Support" icon="help" href="mailto:support@nyuchi.com" />
+      </Fragment>
+      <AccountMenu slot="account" name="Tendai Moyo" email="tendai@example.com" signOutAction="/auth/logout" />
+      <ThemeToggle slot="sidebar-footer" />
+      <slot />
+      <CommandPalette slot="overlay" groups={groups} id="console-palette" action="/search" label="Search Maps" placeholder="Search sections" />
+    </AppShell>
+    <BottomNav items={phone} current={current} />
+    <script is:inline src="/copy.js" defer></script>
+    <script is:inline src="/shell.js" defer></script>
+    <script type="module" src="/map.js"></script>
+    <script type="module" src="/embed.js"></script>
+  </body>
+</html>

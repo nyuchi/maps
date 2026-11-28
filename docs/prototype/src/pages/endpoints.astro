@@ -1,0 +1,47 @@
+---
+import Shell from "../layouts/Shell.astro";
+import PageHeader from "@bundu/ui/app/PageHeader.astro";
+import Card from "@bundu/ui/app/Card.astro";
+import Badge from "@bundu/ui/app/Badge.astro";
+import DataTable from "@bundu/ui/app/DataTable.astro";
+import Code from "../components/Code.astro";
+import Copy from "../components/Copy.astro";
+import { API, SITE, KEY } from "../lib";
+const rows = [
+  { name: { text: "TileJSON", sub: "Describes the tiles and carries the credits" }, url: { text: "/v1/maps/tiles.json", mono: true }, kind: { text: "JSON", badge: "secondary" } },
+  { name: { text: "XYZ tile", sub: "Vector tiles, gzip, immutable for a month" }, url: { text: "/v1/maps/tiles/{z}/{x}/{y}.mvt", mono: true }, kind: { text: "MVT", badge: "secondary" } },
+  { name: { text: "Light style" }, url: { text: "/v1/maps/styles/light.json", mono: true }, kind: { text: "Style", badge: "secondary" } },
+  { name: { text: "Dark style" }, url: { text: "/v1/maps/styles/dark.json", mono: true }, kind: { text: "Style", badge: "secondary" } },
+  { name: { text: "Glyphs" }, url: { text: "/v1/maps/fonts/{stack}/{range}.pbf", mono: true }, kind: { text: "PBF", badge: "secondary" } },
+  { name: { text: "Sprites" }, url: { text: "/v1/maps/sprites/{name}[@2x].{json,png}", mono: true }, kind: { text: "Sprite", badge: "secondary" } },
+  { name: { text: "OpenAPI" }, url: { text: "/openapi.json", mono: true }, kind: { text: "JSON", badge: "secondary" } },
+];
+const S = `${API}/styles/light.json?key=${KEY}`;
+const snips = [
+  ["MapLibre GL JS", `import maplibregl from "maplibre-gl";\n\nnew maplibregl.Map({\n  container: "map",\n  style: "${S}",\n});`],
+  ["Leaflet", `// Vector tiles in Leaflet need a plugin such as maplibre-gl-leaflet.\nL.maplibreGL({ style: "${S}" }).addTo(map);`],
+  ["OpenLayers", `import { apply } from "ol-mapbox-style";\n\napply("map", "${S}");`],
+  ["Flutter", `MapLibreMap(\n  styleString: "${S}",\n  initialCameraPosition: const CameraPosition(target: LatLng(-17.83, 31.05), zoom: 11),\n);`],
+  ["iOS (MapLibre Native)", `let url = URL(string: "${S}")!\nlet mapView = MLNMapView(frame: view.bounds, styleURL: url)`],
+  ["Android (MapLibre Native)", `mapView.getMapAsync { map ->\n  map.setStyle("${S}")\n}`],
+  ["curl", `# From a server, with a secret key pair (never in a web page):\ncurl -s -H "X-Client-Id: nyk_…" -H "X-Client-Secret: nys_…" "${API}/tiles.json"\ncurl -s -o tile.mvt --compressed -H "X-Client-Id: nyk_…" -H "X-Client-Secret: nys_…" "${API}/tiles/6/35/36.mvt"`],
+];
+---
+<Shell title="Endpoints" current="/endpoints/">
+  <PageHeader title="Endpoints" description="Everything an application needs to draw our map, and the code to start with." docsHref="https://docs.nyuchi.com" crumbs={[{ label: "Console", href: "#" }, { label: "Maps", href: "/" }, { label: "Endpoints" }]} />
+  <Card padding="md" class="flex flex-wrap items-center justify-between gap-[14px]">
+    <div class="min-w-0"><p class="text-body-sm text-muted-foreground">Base URL</p><p class="font-mono text-body break-all">{API}</p><p class="mt-2 text-body-sm text-muted-foreground">Served by api.nyuchi.com with your Nyuchi key. {SITE.replace("https://", "")} is this console and the tile origin behind the API, not a second API.</p></div>
+    <Copy text={API} label="Copy base URL" />
+  </Card>
+  <DataTable caption="Endpoints" columns={[{ key: "name", label: "Resource" }, { key: "url", label: "Path" }, { key: "kind", label: "Format" }]} rows={rows} rowKey="url" />
+  <Card padding="md" class="grid gap-[14px]">
+    <h2 class="text-body font-semibold">Snippets</h2>
+    <p class="text-body-sm text-muted-foreground">The tile source credits “© OpenStreetMap contributors”. Libraries that read the style or TileJSON show it for you; if you draw the map yourself, show it too. It is a licence condition.</p>
+    {snips.map(([name, code], i) => (
+      <details class="maps-snip" name="snip" open={i === 0}>
+        <summary class="inline-flex h-8 items-center rounded-full bg-muted px-4 text-body-sm font-medium">{name}</summary>
+        <div class="mt-3"><Code code={code} /></div>
+      </details>
+    ))}
+  </Card>
+</Shell>

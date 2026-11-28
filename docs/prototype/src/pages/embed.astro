@@ -1,0 +1,53 @@
+---
+import Shell from "../layouts/Shell.astro";
+import PageHeader from "@bundu/ui/app/PageHeader.astro";
+import Card from "@bundu/ui/app/Card.astro";
+import Badge from "@bundu/ui/app/Badge.astro";
+import Button from "@bundu/ui/app/Button.astro";
+import FormField from "@bundu/ui/app/FormField.astro";
+import Alert from "@bundu/ui/app/Alert.astro";
+import Code from "../components/Code.astro";
+import { BASE, API, SITE, KEY } from "../lib";
+const iframe = `<iframe\n  src="${SITE}/embed/?style=light&center=31.05,-17.83&zoom=11&key=${KEY}"\n  width="600" height="400" loading="lazy"\n  title="Map of Harare" allow="geolocation"></iframe>`;
+const script = `<script type="module" src="${SITE}/embed.js"></script>\n<nyuchi-map style-name="light" center="31.05,-17.83" zoom="11"\n  key="${KEY}" label="Map of Harare"></nyuchi-map>`;
+const gl = `new maplibregl.Map({\n  container: "map",\n  style: "${API}/styles/light.json?key=${KEY}",\n  center: [31.05, -17.83],\n  zoom: 11,\n});`;
+---
+<Shell title="Embed builder" current="/embed/">
+  <PageHeader title="Embed builder" description="Put a Nyuchi map on your own site. Choose how it looks, check it works, copy the code." docsHref="https://docs.nyuchi.com" crumbs={[{ label: "Console", href: "#" }, { label: "Maps", href: "/" }, { label: "Embed builder" }]} />
+  <div class="grid gap-5 xl:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+    <Card padding="md" class="content-start">
+      <form id="embed-form" class="grid gap-[14px]" onsubmit="return false">
+        <FormField name="style" label="Style" as="select" value="light" options={[{ value: "light", label: "Light" }, { value: "dark", label: "Dark" }]} />
+        <div class="grid grid-cols-2 gap-[9px]">
+          <FormField name="lat" label="Latitude" type="number" step="0.0001" value="-17.83" />
+          <FormField name="lng" label="Longitude" type="number" step="0.0001" value="31.05" />
+        </div>
+        <FormField name="zoom" label="Zoom" type="number" min="0" max="14" step="0.5" value="11" hint="0 is the world, 14 is a street." />
+        <FormField name="markers" label="Markers" as="textarea" rows={3} value={"31.05,-17.83"} hint="One per line: longitude,latitude." />
+        <FormField name="key" label="Publishable key" as="select" value="web" options={[{ value: "web", label: "Weather web (nyk_7Qp…x2)" }, { value: "docs", label: "Docs site (nyk_Kd3…m9)" }]} hint="Only origins on the key's list can show this map." />
+        <FormField name="nav" label="Zoom controls" as="switch" checked={true} />
+      </form>
+    </Card>
+    <div class="grid min-w-0 content-start gap-5">
+      <div class="grid gap-[14px]">
+        <div id="embed-map" class="maps-frame h-[340px] sm:h-[400px]" data-map data-base={BASE} data-style="light" data-center="31.05,-17.83" data-zoom="11" data-markers="31.05,-17.83" role="region" aria-label="Preview of the embedded map"></div>
+        <p class="flex flex-wrap items-center gap-[14px] text-body-sm text-muted-foreground"><Badge variant="secondary">Credits always on</Badge>© OpenStreetMap contributors is part of the map and cannot be turned off.</p>
+      </div>
+      <Card padding="md">
+        <h2 class="text-body font-semibold">Allowed origins for this key</h2>
+        <ul role="list" class="mt-3 flex flex-wrap gap-[14px]">
+          <li><Badge variant="secondary">https://weather.example.com</Badge></li>
+          <li><Badge variant="secondary">https://*.example.org</Badge></li>
+        </ul>
+        <p class="mt-3 text-body-sm text-muted-foreground">The embed page may only be framed by these origins, and api.nyuchi.com refuses tile requests for this key from any other origin. Edit them under <a class="underline underline-offset-4" href="/keys/">API keys</a>.</p>
+      </Card>
+      <Card padding="md" class="grid gap-[14px]">
+        <h2 class="text-body font-semibold">Copy the code</h2>
+        <details class="maps-snip" name="embed" open><summary class="inline-flex h-8 items-center rounded-full bg-muted px-4 text-body-sm font-medium">Iframe</summary><div class="mt-3"><Code code={iframe} lang="html" /></div></details>
+        <details class="maps-snip" name="embed"><summary class="inline-flex h-8 items-center rounded-full bg-muted px-4 text-body-sm font-medium">Web component</summary><div class="mt-3"><Code code={script} lang="html" /></div></details>
+        <details class="maps-snip" name="embed"><summary class="inline-flex h-8 items-center rounded-full bg-muted px-4 text-body-sm font-medium">MapLibre GL JS</summary><div class="mt-3"><Code code={gl} lang="js" /></div></details>
+      </Card>
+    </div>
+  </div>
+  <p class="text-caption text-muted-foreground">Sample data: keys and origins on this page are invented. The embed page, embed.js and the origin check are proposed, not built.</p>
+</Shell>

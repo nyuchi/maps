@@ -1,0 +1,8 @@
+---
+import Copy from "./Copy.astro";
+const { code, lang = "" } = Astro.props;
+---
+<div class="maps-code" data-lang={lang}>
+  <Copy text={code} />
+  <pre tabindex="0"><code>{code}</code></pre>
+</div>

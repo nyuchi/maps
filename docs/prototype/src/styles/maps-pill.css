@@ -1,0 +1,241 @@
+/*
+ * Pill overlay (owner rule): text buttons, chips and badges are pills; icon-only
+ * controls are round; elevation is soft and borders are quiet.
+ *
+ * The Dashboard Standard draws these at --radius-sm (7px) with a hairline
+ * border. This file repoints the one radius the standard uses for controls
+ * (--radius-sm) to full, so every control that is a rounded-sm in @bundu/ui
+ * becomes a pill and every square icon-only control becomes a circle. Cards
+ * keep --radius-md/lg. Proposed upstream as a `density`-style overlay, not a
+ * local fork of the components.
+ */
+:root,
+.dark,
+[data-theme="dark"] {
+  --radius-sm: 9999px;
+  --maps-elev-1:
+    0 1px 2px color-mix(in oklab, var(--foreground) 8%, transparent),
+    0 1px 3px color-mix(in oklab, var(--foreground) 6%, transparent);
+  --maps-elev-2:
+    0 2px 6px color-mix(in oklab, var(--foreground) 10%, transparent),
+    0 8px 24px color-mix(in oklab, var(--foreground) 8%, transparent);
+}
+
+/* Cards and tiles: soft elevation instead of a drawn edge. */
+[data-slot="app-shell"] [data-slot="card"],
+[data-slot="app-shell"] [data-slot="stat-tile"],
+[data-slot="app-shell"] [data-slot="detail-panel"] {
+  border-color: color-mix(in oklab, var(--border) 45%, transparent);
+  box-shadow: var(--maps-elev-1);
+}
+[data-slot="app-shell"] header[data-slot="app-top-bar"] {
+  box-shadow: var(--maps-elev-1);
+  border-bottom-color: transparent;
+}
+
+/* Icon-only controls are circles: equal width and height. */
+[data-slot="app-shell"] button[aria-label]:not(.maps-copy):not([popovertarget]),
+[data-slot="app-shell"] [data-icon-button] {
+  aspect-ratio: 1 / 1;
+}
+.maps-round {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  width: 2rem;
+  height: 2rem;
+}
+@media (pointer: coarse) {
+  .maps-round {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+}
+
+/* Code blocks and copy button. */
+.maps-code {
+  min-width: 0;
+  max-width: 100%;
+  position: relative;
+  border-radius: var(--radius-lg);
+  background: var(--muted);
+}
+.maps-code pre {
+  margin: 0;
+  padding: 14px 14px;
+  overflow-x: auto;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+.maps-code code {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.maps-code .maps-copy {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+}
+.maps-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 2rem;
+  padding: 7px 14px;
+  white-space: nowrap;
+  border-radius: 9999px;
+  border: 0;
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: var(--maps-elev-1);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+}
+.maps-copy::after {
+  content: "";
+  position: absolute;
+  inset: -6px -2px;
+}
+@media (pointer: coarse) {
+  .maps-copy {
+    height: 2.75rem;
+  }
+}
+
+/* Map frame and MapLibre controls drawn as round, soft controls. */
+.maps-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--muted);
+  box-shadow: var(--maps-elev-1);
+}
+.maps-frame .maplibregl-ctrl-group {
+  border-radius: 9999px;
+  background: var(--card);
+  box-shadow: var(--maps-elev-2);
+  overflow: hidden;
+}
+.maps-frame .maplibregl-ctrl-group button {
+  width: 32px;
+  height: 32px;
+}
+.maps-frame .maplibregl-ctrl-group button + button {
+  border-top: 0;
+}
+.maps-frame .maplibregl-ctrl-attrib {
+  border-radius: 9999px;
+  background: color-mix(in oklab, var(--card) 88%, transparent);
+  box-shadow: var(--maps-elev-1);
+}
+.maps-frame .maplibregl-ctrl-attrib a {
+  color: var(--foreground);
+}
+
+/* A tabbed snippet picker with no script: exclusive <details>. */
+.maps-snip > summary {
+  list-style: none;
+  cursor: pointer;
+}
+.maps-snip > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Sample-data ribbon. */
+.maps-sample {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.75rem;
+}
+
+[data-slot="app-shell"] main .grid > * {
+  min-width: 0;
+}
+.maps-code pre {
+  padding-right: 112px;
+}
+
+.maps-frame .maplibregl-ctrl-scale {
+  border-radius: 9999px;
+  border: 0;
+  padding: 7px 14px;
+  background: color-mix(in oklab, var(--card) 88%, transparent);
+  color: var(--foreground);
+  box-shadow: var(--maps-elev-1);
+}
+@media (prefers-color-scheme: dark) {
+  .maps-frame .maplibregl-ctrl-icon {
+    filter: invert(1) hue-rotate(180deg);
+  }
+}
+
+/* mzizi-spacing-exempt: a 16px glyph inside a button; the button carries the hit region. */
+.maps-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Phone: leave room for the 80px bottom navigation (shown below 48rem, as in the registry). */
+@media (max-width: 47.999rem) {
+  [data-slot="app-main"] {
+    padding-bottom: 88px;
+  }
+}
+
+/* Theme toggle: Radix Moon in the light theme, Sun in the dark one. */
+.theme-sun {
+  display: none;
+}
+[data-theme="dark"] .theme-sun {
+  display: inline-block;
+}
+[data-theme="dark"] .theme-moon {
+  display: none;
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]) .theme-sun {
+    display: inline-block;
+  }
+  html:not([data-theme]) .theme-moon {
+    display: none;
+  }
+}
+
+/* The shell's sidebar footer is desktop only and hides its slot in the icon rail. The theme
+   switch has to be reachable in the phone drawer and in the rail too. TODO(mzizi): the shell
+   should keep footer actions in the rail and in the drawer. */
+[data-slot="app-sidebar"] [data-slot="sidebar-foot"] {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+@media (max-width: 63.999rem) {
+  [data-slot="app-sidebar"]
+    [data-slot="sidebar-foot"]
+    > :is(label, button[aria-controls]) {
+    display: none;
+  }
+}
+[data-slot="app-shell"]:has([data-shell-collapse]:checked)
+  [data-slot="sidebar-foot"]
+  [data-nav-text]:has([data-theme-toggle]) {
+  display: block !important;
+}
+[data-slot="app-shell"]:has([data-shell-collapse]:checked)
+  [data-slot="sidebar-foot"] {
+  flex-direction: column;
+  align-items: center;
+}
+
+/* mzizi-spacing-exempt: glyph sizes inside round icon buttons; the button carries the hit region. */
+[data-theme-toggle] svg {
+  width: 20px;
+  height: 20px;
+}
+[data-slot="sidebar-foot"] button svg {
+  width: 20px;
+  height: 20px;
+}

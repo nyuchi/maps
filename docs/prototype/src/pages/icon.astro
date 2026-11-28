@@ -1,0 +1,26 @@
+---
+import Shell from "../layouts/Shell.astro";
+import PageHeader from "@bundu/ui/app/PageHeader.astro";
+import Card from "@bundu/ui/app/Card.astro";
+import Alert from "@bundu/ui/app/Alert.astro";
+import BrandMark from "@bundu/ui/app/BrandMark.astro";
+const sizes = [16, 32, 64];
+---
+<Shell title="Product icon" current="/icon/">
+  <PageHeader title="Product icon" description="What the sidebar and the favicon use today, and a proposal for the owner to approve." crumbs={[{ label: "Console", href: "#" }, { label: "Maps", href: "/" }, { label: "Product icon" }]} />
+  <Alert variant="info" title="No Nyuchi Maps icon exists yet">
+    Mzizi, the Console and the Nyuchi repositories hold app icons for Nyuchi, Mukoko, Shamwari, Bundu, Travel, Telia and Kweli, and none for Maps. The sidebar and the favicon use the official Nyuchi mark. The glyph on the right is a proposal, built from Mzizi's gold brand fill and its dark on-brand colour. It is not used anywhere else.
+  </Alert>
+  <div class="grid gap-5 md:grid-cols-2">
+    <Card padding="md" class="grid content-start gap-[14px]">
+      <h2 class="text-body font-semibold">In use: the Nyuchi mark</h2>
+      <p class="text-body-sm text-muted-foreground">The official mark from Mzizi's brand assets (the bee), through BrandMark, light and dark.</p>
+      <div class="flex items-end gap-[21px]">{sizes.map((s) => <BrandMark size={s} decorative />)}</div>
+    </Card>
+    <Card padding="md" class="grid content-start gap-[14px]">
+      <h2 class="text-body font-semibold">Proposed: a map tile and pin</h2>
+      <p class="text-body-sm text-muted-foreground">A rounded tile with a faint tile grid and a pin, one gold and one dark brown, nothing else. Drawn at 128 by 128.</p>
+      <div class="flex items-end gap-[21px]">{sizes.map((s) => <img src="/proposed-nyuchi-maps-icon.svg" width={s} height={s} alt="" />)}</div>
+    </Card>
+  </div>
+</Shell>

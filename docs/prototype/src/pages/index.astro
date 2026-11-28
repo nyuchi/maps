@@ -1,0 +1,75 @@
+---
+import Shell from "../layouts/Shell.astro";
+import PageHeader from "@bundu/ui/app/PageHeader.astro";
+import StatTiles from "@bundu/ui/app/StatTiles.astro";
+import StatTile from "@bundu/ui/app/StatTile.astro";
+import Card from "@bundu/ui/app/Card.astro";
+import Badge from "@bundu/ui/app/Badge.astro";
+import Button from "@bundu/ui/app/Button.astro";
+import BarChart from "@bundu/ui/app/BarChart.astro";
+import Icon from "@bundu/ui/Icon.astro";
+import Sample from "../components/Sample.astro";
+import { series, days } from "../lib";
+const d = days(30);
+const req = series(30, 410000, 60000).map((v, i) => ({ ...d[i], value: v }));
+const cells = [
+  { label: "Africa", value: 3180 },
+  { label: "South East Asia", value: 1240 },
+  { label: "On demand", value: 212 },
+];
+const status = [
+  ["Tiles", "Operational", "success"],
+  ["Styles, glyphs and sprites", "Operational", "success"],
+  ["On-demand builder", "Building 1 region", "info"],
+  ["Embed", "Operational", "success"],
+];
+---
+<Shell title="Overview" current="/">
+  <PageHeader title="Overview" description="The map and tile infrastructure for Nyuchi, Mukoko and the developers who build on them." docsHref="https://docs.nyuchi.com" crumbs={[{ label: "Console", href: "#" }, { label: "Maps" }]}>
+  </PageHeader>
+  <Sample />
+  <StatTiles label="Last 30 days" columns={4}>
+    <StatTile label="Tile requests" value={12480000} trend={8.4} versus="the previous 30 days" info="Tile requests answered, from the edge cache or from R2." />
+    <StatTile label="Cache hit rate" value="97.2%" trend={0.6} points versus="the previous 30 days" info="Share of tile requests answered from the edge cache." />
+    <StatTile label="Error rate" value="0.04%" trend={-0.2} points upIsGood={false} versus="the previous 30 days" info="Responses with a 5xx status." />
+    <StatTile label="Bytes served" value="1.9 TB" trend={5.1} versus="the previous 30 days" />
+  </StatTiles>
+
+  <div class="grid gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+    <BarChart title="Tile requests per day" caption="Tile requests per day, 30 October to 28 November 2026." data={req} valueLabel="Requests" labelHeading="Day" id="req" />
+    <div class="grid gap-5 content-start">
+      <Card padding="md">
+        <h2 class="text-body font-semibold">Service status</h2>
+        <ul role="list" class="mt-3 grid gap-[14px]">
+          {status.map(([n, s, t]) => (
+            <li class="flex items-center justify-between gap-[14px]"><span class="text-body-sm">{n}</span><Badge variant={"secondary"}>{s}</Badge></li>
+          ))}
+        </ul>
+      </Card>
+      <Card padding="md">
+        <h2 class="text-body font-semibold">Quick actions</h2>
+        <div class="mt-3 flex flex-wrap gap-[9px]">
+          <Button href="/keys/" variant="primary"><Icon name="key" class="maps-icon" />Create a key</Button>
+          <Button href="/embed/" variant="outline"><Icon name="code" class="maps-icon" />Build an embed</Button>
+          <Button href="/endpoints/" variant="outline"><Icon name="terminal" class="maps-icon" />Copy a snippet</Button>
+        </div>
+      </Card>
+    </div>
+  </div>
+
+  <div class="grid gap-5 lg:grid-cols-2">
+    <div class="grid content-start gap-[14px]">
+      <BarChart title="Coverage by area" caption="Stored z6 cells, by area." data={cells} layout="rows" valueLabel="Cells" labelHeading="Area" id="cov" />
+      <div><Button href="/coverage/" variant="outline" size="sm">See coverage</Button></div>
+    </div>
+    <Card padding="md">
+      <h2 class="text-body font-semibold">Recent activity</h2>
+      <ul role="list" class="mt-3 grid gap-[14px] text-body-sm">
+        <li class="flex gap-[14px]"><Badge variant="secondary">Region</Badge><span>6/50/31 is ready, 99 MB, build 20261127.</span></li>
+        <li class="flex gap-[14px]"><Badge variant="secondary">Key</Badge><span>Publishable key <code class="font-mono">nyk_7Qp…x2</code> now allows 2 origins.</span></li>
+        <li class="flex gap-[14px]"><Badge variant="secondary">Region</Badge><span>6/51/31 is building, lease ends in 20 minutes.</span></li>
+        <li class="flex gap-[14px]"><Badge variant="secondary">Limit</Badge><span>Key “Weather web” reached 80% of its monthly requests.</span></li>
+      </ul>
+    </Card>
+  </div>
+</Shell>
