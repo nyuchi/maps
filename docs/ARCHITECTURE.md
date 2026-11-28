@@ -199,7 +199,7 @@ Object or KV) read on every tile request, which costs more than the exposure it
 removes. Because a remembered nonce is rejected, the signer must use a new
 nonce on every attempt, retries included.
 
-**Things to know before enforcing**
+### Before enforcing
 
 - The rate limiter is keyed by client address. Behind the Servers API every
   request arrives from its few egress addresses, so they share a bucket; the
