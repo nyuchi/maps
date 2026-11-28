@@ -49,7 +49,7 @@
     // the Nyuchi Servers API). The verification keys are the Worker secret
     // ORIGIN_AUTH_KEYS ("kid:secret,kid:secret"), set with `wrangler secret
     // put`, never here. See docs/ARCHITECTURE.md, "Origin authentication".
-    "ORIGIN_AUTH": "off",
+    "ORIGIN_AUTH": "log",
     // On-demand map regions: a tile the archive does not hold records demand;
     // the region builder (on Coolify) builds the region and the Worker serves
     // it once the manifest lists it. "off" or unset restores the old behaviour.
