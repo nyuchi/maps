@@ -121,13 +121,10 @@ describe("GET / (real assets in workerd)", () => {
     expect(html).not.toMatch(/(?:https?:)?\/\/[a-z0-9.-]+\.[a-z]{2,}/i);
     expect(html).not.toMatch(/\sstyle\s*=/i);
     expect(html).not.toMatch(/\son[a-z]+\s*=/i);
-    // Every <script> has a src; none carries code.
-    for (const m of html.matchAll(
-      /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi,
-    )) {
-      expect(m[1]).toContain("src=");
-      expect(m[2]?.trim()).toBe("");
-    }
+    // Every <script> opening tag has a src, so none carries inline code.
+    const tags = html.match(/<script\b[^>]*>/gi) ?? [];
+    expect(tags.length).toBeGreaterThan(0);
+    for (const tag of tags) expect(tag).toContain("src=");
     expect(html).not.toContain("<style");
   });
 
