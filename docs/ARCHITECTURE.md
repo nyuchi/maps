@@ -131,6 +131,87 @@ commented out in `wrangler.jsonc`, so nothing is served until the owner
 provisions the DNS record and enables it; the map page then goes live at `/`
 with the same deploy.
 
+## Origin authentication
+
+`maps.nyuchi.com` is the tile origin behind `api.nyuchi.com` and the Nyuchi
+Servers API, and it also serves the public map page. Once every consumer has
+moved to the API, `/v1/*` must answer only the Servers API. That is
+`ORIGIN_AUTH` (code: `src/originauth.ts`), **off by default**:
+
+| `ORIGIN_AUTH`   | Behaviour                                                                                                                                                                                                                                                                                         |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `off` (default) | Nothing is checked. Unset, empty and `off` are the same, and the code path is a single early return.                                                                                                                                                                                              |
+| `log`           | `/v1` requests are verified, counted in a structured log line (`event: origin_auth`, `result`, `reason`, `route`; never the path, query, address or signature) and served either way. The response carries `X-Origin-Auth: ok`, `missing` or `invalid`, only in this mode.                        |
+| `enforce`       | A `/v1` request without a valid credential is a `401` RFC 9457 problem (`application/problem+json`, `no-store`) that does not say which part was wrong. With no keys configured every `/v1` request is refused (fail closed). Any other value of the variable is treated as `enforce` and logged. |
+
+Rollback is the variable. `/health`, `/`, `/assets/*`, `/favicon.svg`,
+`/robots.txt` and `/openapi.json` are outside `/v1` and always public; CORS
+preflight (`OPTIONS`) is answered before the check and returns no data.
+
+**Order.** The check is middleware on `/v1/*` registered right after CORS, so
+it runs before the rate limiter, the edge-cache lookup and every handler. A
+tile cached by an authorised request is therefore never served to an
+unauthenticated one, and a `401` is `no-store` and never written to the cache.
+The cache key is unchanged (origin, path, `TILES_VERSION`): the credential is
+not part of it, because the check precedes every read and write. Rejected
+requests spend none of the per-IP rate budget. Both are tested.
+
+**The credential** (scheme `v1`, the design doc's proposal with a key id and a
+nonce added):
+
+```text
+X-Nyuchi-Origin: kid=<key id>,t=<unix seconds>,n=<nonce>,v1=<hex>
+
+v1        = hex(HMAC-SHA256(secret of kid, canonical))
+canonical = "nyuchi-origin-v1" LF METHOD LF TARGET LF t LF n LF kid
+TARGET    = path and query exactly as sent: /v1/tiles/3/4/5.mvt?x=1
+```
+
+`kid` is 1 to 32 of `A-Za-z0-9_-`; `t` is the signer's clock; `n` is 16 to 64
+characters of `A-Za-z0-9_-`, fresh for every request attempt. The signature
+covers the method and the target, so a captured header cannot be used for
+another path, query or method (a `GET` signature does not authorise `HEAD`;
+sign each method you send). Test vector (secret `test-secret-0123456789abcdef`):
+
+```text
+GET /v1/tiles/3/4/5.mvt?x=1   t=1700000000  n=AAAAAAAAAAAAAAAAAAAAAA  kid=k1
+v1=1531768216d79431dc3b6689f96c5699c7188dabb7c8506346845d3af0f23ab6
+```
+
+**Keys.** The Worker secret `ORIGIN_AUTH_KEYS` holds `kid:secret` pairs
+separated by commas (secrets of at least 16 characters; set with
+`wrangler secret put`, never in `wrangler.jsonc`). Any listed key verifies, so
+rotation has no gap: add the new pair, switch the signer to the new `kid`,
+remove the old pair. The signature is compared in constant time
+(`crypto.subtle.verify`), the HMAC is computed even for an unknown `kid`, and
+a credential is accepted when `|now - t|` is within `ORIGIN_AUTH_WINDOW_SECONDS`
+(60 by default, bounded to 5 to 300).
+
+**Replay, and why it is only best effort.** A Worker is stateless and runs in
+many isolates, so a nonce can be remembered only inside one isolate. The
+Worker does that (a bounded in-memory table, filled only by correctly signed
+requests), which rejects an immediate replay to the same isolate, but a replay
+that lands in another isolate or after a restart is accepted. What bounds a
+replay for real is the short window plus the signature covering method and
+target: a captured header works for one `GET` or `HEAD` of public map data, for
+at most the window. Strict one-time nonces would need shared state (a Durable
+Object or KV) read on every tile request, which costs more than the exposure it
+removes. Because a remembered nonce is rejected, the signer must use a new
+nonce on every attempt, retries included.
+
+**Things to know before enforcing**
+
+- The rate limiter is keyed by client address. Behind the Servers API every
+  request arrives from its few egress addresses, so they share a bucket; the
+  lock PR removes the per-address limiter (design doc, section 12.2).
+- Cloudflare zone settings on `nyuchi.com` sit in front of the Worker and can
+  refuse a signed request before it arrives: Hotlink Protection answers `403`
+  (`error code: 1011`) on `.png` and other image files when the `Referer` is
+  another site, and a managed challenge (`cf-mitigated: challenge`) answers
+  `HEAD`, `POST`, `OPTIONS` and `GET` without `User-Agent` or `Accept`. The
+  Servers API must send `GET`, a `User-Agent`, `Accept` and no `Referer`, and
+  must probe `/health` with `GET`, not `HEAD`.
+
 ## Access model
 
 - **First-party apps** (Mukoko apps, Nyuchi products): an allow-listed origin

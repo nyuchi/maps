@@ -12,6 +12,7 @@ import {
 } from "./archive";
 import { attributionHtml } from "./credits";
 import { cors } from "./cors";
+import { originAuth } from "./originauth";
 import {
   CACHE_ASSET,
   CACHE_EMPTY,
@@ -66,6 +67,12 @@ export function createApp(
   app.notFound(() => jsonError(404, "not_found"));
 
   app.use("*", cors);
+
+  // Origin auth (off unless ORIGIN_AUTH is set): before every /v1 handler,
+  // the rate limiter and the edge cache, so nothing cached is reachable
+  // without the credential. Not under /v1, so /health, the map page and
+  // /openapi.json stay public.
+  app.use("/v1/*", originAuth);
 
   app.get("/health", () =>
     Response.json(

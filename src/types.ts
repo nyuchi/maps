@@ -9,6 +9,12 @@ export interface Env {
   PUBLIC_BASE_URL?: string;
   /** Comma-separated first-party origins allowed by CORS. */
   ALLOWED_ORIGINS?: string;
+  /** Origin auth mode: "off" (default), "log" or "enforce". */
+  ORIGIN_AUTH?: string;
+  /** Secret: verification keys as "kid:secret,kid:secret" (see originauth). */
+  ORIGIN_AUTH_KEYS?: string;
+  /** Allowed clock skew and credential lifetime in seconds (5 to 300, 60). */
+  ORIGIN_AUTH_WINDOW_SECONDS?: string;
   /** Object key of the PMTiles archive in the bucket. */
   TILES_KEY?: string;
   /** Bump when the archive is replaced: part of the edge cache key. */

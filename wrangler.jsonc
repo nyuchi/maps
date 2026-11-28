@@ -44,6 +44,12 @@
     // for local development put ALLOWED_ORIGINS (with http://localhost:3000)
     // in .dev.vars, see .dev.vars.example.
     "ALLOWED_ORIGINS": "https://weather.mukoko.com,https://weatherstations.nyuchi.com",
+    // Origin auth for /v1: "off" (today's behaviour), "log" (verify and
+    // count, never reject) or "enforce" (401 without a valid signature from
+    // the Nyuchi Servers API). The verification keys are the Worker secret
+    // ORIGIN_AUTH_KEYS ("kid:secret,kid:secret"), set with `wrangler secret
+    // put`, never here. See docs/ARCHITECTURE.md, "Origin authentication".
+    "ORIGIN_AUTH": "off",
     // Object key of the PMTiles archive inside the bucket.
     "TILES_KEY": "tiles/nyuchi-maps.pmtiles",
     // Part of the edge cache key. Bump it (and deploy) whenever the archive

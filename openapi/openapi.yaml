@@ -10,6 +10,12 @@ info:
     available under the ODbL as a Produced Work; credits are carried by the
     TileJSON and must be displayed by every map. Every `/v1` response carries
     `Vary: Origin`; CORS is an allow-list of first-party origins.
+
+    When origin authentication is enforced (`ORIGIN_AUTH=enforce`), every
+    `/v1` request must carry a signed `X-Nyuchi-Origin` header from the Nyuchi
+    Servers API and otherwise gets `401` (`application/problem+json`). It is
+    off by default; see docs/ARCHITECTURE.md. `/health`, `/openapi.json` and
+    the map page are always public.
   license:
     name: Apache-2.0
     identifier: Apache-2.0
@@ -108,6 +114,7 @@ paths:
           description: No tile here (inside the archive's zoom range).
         "304": {$ref: "#/components/responses/NotModified"}
         "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
         "404": {$ref: "#/components/responses/NotFound"}
         "429": {$ref: "#/components/responses/RateLimited"}
         "503": {$ref: "#/components/responses/ArchiveUnavailable"}
@@ -165,6 +172,7 @@ paths:
           description: No tile here (inside the archive's zoom range).
         "304": {$ref: "#/components/responses/NotModified"}
         "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
         "404": {$ref: "#/components/responses/NotFound"}
         "429": {$ref: "#/components/responses/RateLimited"}
         "503": {$ref: "#/components/responses/ArchiveUnavailable"}
@@ -193,6 +201,7 @@ paths:
               schema: {type: object}
         "304": {$ref: "#/components/responses/NotModified"}
         "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
         "404": {$ref: "#/components/responses/NotFound"}
         "429": {$ref: "#/components/responses/RateLimited"}
   /v1/fonts/{stack}/{range}.pbf:
@@ -220,6 +229,7 @@ paths:
               schema: {type: string, format: binary}
         "304": {$ref: "#/components/responses/NotModified"}
         "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
         "404": {$ref: "#/components/responses/NotFound"}
         "429": {$ref: "#/components/responses/RateLimited"}
   /v1/sprites/{name}.{ext}:
@@ -247,6 +257,7 @@ paths:
               schema: {type: string, format: binary}
         "304": {$ref: "#/components/responses/NotModified"}
         "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
         "404": {$ref: "#/components/responses/NotFound"}
         "429": {$ref: "#/components/responses/RateLimited"}
 components:
@@ -265,6 +276,15 @@ components:
       description: Edge and browser caching policy.
       schema: {type: string}
   schemas:
+    Problem:
+      description: RFC 9457 problem details.
+      type: object
+      required: [type, title, status]
+      properties:
+        type: {type: string}
+        title: {type: string}
+        status: {type: integer}
+        detail: {type: string}
     Error:
       type: object
       required: [error]
@@ -320,6 +340,15 @@ components:
       content:
         application/json:
           schema: {$ref: "#/components/schemas/Error"}
+    Unauthorized:
+      description: |
+        Only when origin authentication is enforced: the `X-Nyuchi-Origin`
+        credential is missing or not valid. The body does not say which.
+      headers:
+        WWW-Authenticate: {schema: {type: string}}
+      content:
+        application/problem+json:
+          schema: {$ref: "#/components/schemas/Problem"}
     NotFound:
       description: |
         Unknown path, style, source, font or sprite; a tile outside the
