@@ -7,10 +7,10 @@ import Button from "@bundu/ui/app/Button.astro";
 import FormField from "@bundu/ui/app/FormField.astro";
 import Alert from "@bundu/ui/app/Alert.astro";
 import Code from "../components/Code.astro";
-import { BASE, HOST } from "../lib";
-const iframe = `<iframe\n  src="${HOST}/embed?style=light&center=31.05,-17.83&zoom=11&key=nyk_EXAMPLE_ONLY"\n  width="600" height="400" loading="lazy"\n  title="Map of Harare" allow="geolocation"></iframe>`;
-const script = `<script type="module" src="${HOST}/embed.js"></script>\n<nyuchi-map style-name="light" center="31.05,-17.83" zoom="11"\n  key="nyk_EXAMPLE_ONLY" label="Map of Harare"></nyuchi-map>`;
-const gl = `new maplibregl.Map({\n  container: "map",\n  style: "${HOST}/v1/styles/light.json",\n  center: [31.05, -17.83],\n  zoom: 11,\n});`;
+import { BASE, API, SITE, KEY } from "../lib";
+const iframe = `<iframe\n  src="${SITE}/embed/?style=light&center=31.05,-17.83&zoom=11&key=${KEY}"\n  width="600" height="400" loading="lazy"\n  title="Map of Harare" allow="geolocation"></iframe>`;
+const script = `<script type="module" src="${SITE}/embed.js"></script>\n<nyuchi-map style-name="light" center="31.05,-17.83" zoom="11"\n  key="${KEY}" label="Map of Harare"></nyuchi-map>`;
+const gl = `new maplibregl.Map({\n  container: "map",\n  style: "${API}/styles/light.json?key=${KEY}",\n  center: [31.05, -17.83],\n  zoom: 11,\n});`;
 ---
 <Shell title="Embed builder" current="/embed/">
   <PageHeader title="Embed builder" description="Put a Nyuchi map on your own site. Choose how it looks, check it works, copy the code." docsHref="https://docs.nyuchi.com" crumbs={[{ label: "Console", href: "#" }, { label: "Maps", href: "/" }, { label: "Embed builder" }]} />
@@ -39,7 +39,7 @@ const gl = `new maplibregl.Map({\n  container: "map",\n  style: "${HOST}/v1/styl
           <li><Badge variant="secondary">https://weather.example.com</Badge></li>
           <li><Badge variant="secondary">https://*.example.org</Badge></li>
         </ul>
-        <p class="mt-3 text-body-sm text-muted-foreground">The iframe may only be framed by these origins, and tile requests from other origins are refused. Edit them under <a class="underline underline-offset-4" href="/keys/">API keys</a>.</p>
+        <p class="mt-3 text-body-sm text-muted-foreground">The embed page may only be framed by these origins, and api.nyuchi.com refuses tile requests for this key from any other origin. Edit them under <a class="underline underline-offset-4" href="/keys/">API keys</a>.</p>
       </Card>
       <Card padding="md" class="grid gap-[14px]">
         <h2 class="text-body font-semibold">Copy the code</h2>
@@ -49,5 +49,5 @@ const gl = `new maplibregl.Map({\n  container: "map",\n  style: "${HOST}/v1/styl
       </Card>
     </div>
   </div>
-  <p class="text-caption text-muted-foreground">Sample data: keys and origins on this page are invented. The /embed route and embed.js are proposed, not built.</p>
+  <p class="text-caption text-muted-foreground">Sample data: keys and origins on this page are invented. The embed page, embed.js and the origin check are proposed, not built.</p>
 </Shell>

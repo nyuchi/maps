@@ -8,17 +8,17 @@ import SegmentedControl from "@bundu/ui/SegmentedControl.astro";
 import DetailPanel from "@bundu/ui/app/DetailPanel.astro";
 import Copy from "../components/Copy.astro";
 import Sample from "../components/Sample.astro";
-import { BASE, HOST } from "../lib";
+import { BASE, API } from "../lib";
 ---
 <Shell title="Explorer" current="/explorer/">
-  <PageHeader title="Explorer" description="Our base map, drawn from our own tiles. Switch the style, move around, and copy the URL a developer would use." docsHref="https://docs.nyuchi.com" crumbs={[{ label: "Console", href: "#" }, { label: "Maps", href: "/" }, { label: "Explorer" }]} />
+  <PageHeader title="Explorer" description="The Nyuchi base map, as the Nyuchi API serves it. Switch the style, move around, and copy the URL a developer would use." docsHref="https://docs.nyuchi.com" crumbs={[{ label: "Console", href: "#" }, { label: "Maps", href: "/" }, { label: "Explorer" }]} />
   <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_21rem]">
     <div class="grid gap-[14px]">
       <div class="flex flex-wrap items-end gap-[14px]">
         <div data-style-group>
           <SegmentedControl name="style" legend="Style" size="sm" value="auto" options={[["light", "Light"], ["dark", "Dark"]]} />
         </div>
-        <Copy text={`${HOST}/v1/styles/light.json`} label="Copy style URL" />
+        <Copy text={`${API}/styles/light.json`} label="Copy style URL" />
       </div>
       <div id="explorer-map" class="maps-frame h-[56vh] min-h-[340px] xl:h-[620px]" data-map data-base={BASE} data-style="auto" data-center="31,-1.5" data-zoom="3.1" data-readout="#readout" role="region" aria-label="Map of Africa and South East Asia, drawn from Nyuchi tiles"></div>
       <p class="text-body-sm text-muted-foreground">Credits come from the tile source and are always shown on the map: © OpenStreetMap contributors.</p>
@@ -30,7 +30,7 @@ import { BASE, HOST } from "../lib";
           <div><dt class="text-muted-foreground">Centre and zoom</dt><dd id="readout" class="font-mono">loading…</dd></div>
           <div><dt class="text-muted-foreground">Tile source</dt><dd class="flex flex-wrap items-center gap-2"><span class="font-mono">basemap</span><Badge variant="secondary">vector · MVT</Badge></dd></div>
           <div><dt class="text-muted-foreground">Zoom range</dt><dd>0 to 14</dd></div>
-          <div><dt class="text-muted-foreground">Style URL</dt><dd class="font-mono break-all">{HOST}/v1/styles/light.json</dd></div>
+          <div><dt class="text-muted-foreground">Style URL</dt><dd class="font-mono break-all">{API}/styles/light.json</dd></div>
         </dl>
       </Card>
       <Card padding="md">

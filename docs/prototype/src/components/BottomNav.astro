@@ -1,13 +1,25 @@
 ---
-// TODO(mzizi): a pure Astro build of mzizi-bottom-nav (the registry has it for Rust/Dioxus
-// and React only). Four to five items, 45px hit regions, current item marked, "More" opens
-// the shell's drawer (the same popover the top bar's menu button opens).
+// A port of the registry's mzizi-bottom-nav (N7 shell; Rust/Dioxus and React builds only) to Astro,
+// markup and classes as in components/registry/n7-shell/mzizi-bottom-nav.{rs,tsx}: data-slot,
+// h-20 bar, top accent bar on the current item, optional raised centre FAB, md:hidden.
+// TODO(mzizi): contribute this as app-bottom-nav (Astro) with a contract.
 import Icon from "@bundu/ui/Icon.astro";
-const { items, current, drawer } = Astro.props;
+const { items, current } = Astro.props;
 ---
-<nav class="maps-bottom-nav" aria-label="Primary">
-  {items.map((i) => (
-    <a href={i.href} aria-current={i.href === current ? "page" : undefined}><Icon name={i.icon} /><span>{i.label}</span></a>
-  ))}
-  <button type="button" popovertarget={drawer}><Icon name="menu" /><span>More</span></button>
+<nav data-slot="mzizi-bottom-nav" aria-label="Primary"
+  class="fixed inset-x-0 bottom-0 z-40 flex h-20 items-center justify-around border-t border-border bg-card/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">
+  {items.map((i) =>
+    i.fab ? (
+      <a href={i.href} aria-label={i.label} class="flex size-[52px] -translate-y-6 items-center justify-center rounded-full bg-[var(--color-gold-brand)] text-[var(--color-gold-on-brand)] shadow-[0_4px_20px_color-mix(in_oklab,var(--color-gold-brand)_40%,transparent)] transition-transform active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+        <Icon name="plus" class="size-[26px]" />
+      </a>
+    ) : (
+      <a href={i.href} aria-current={i.href === current ? "page" : undefined}
+        class:list={["relative flex min-h-[45px] min-w-[56px] flex-col items-center gap-[7px] py-1 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary", i.href === current ? "text-primary" : "text-muted-foreground"]}>
+        {i.href === current && <span class="absolute -top-[9px] h-[2.5px] w-7 rounded-full bg-[var(--color-gold-brand)]" />}
+        <Icon name={i.icon} class="size-[21px]" />
+        <span>{i.label}</span>
+      </a>
+    ),
+  )}
 </nav>

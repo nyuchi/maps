@@ -8,10 +8,16 @@ its pages are invented, and each page says so.
 It is built from the real Mzizi Dashboard Standard: the pure Astro app
 components of [`@bundu/ui`](https://www.npmjs.com/package/@bundu/ui) 0.17.0
 (MIT), the Mzizi tokens, floor and density CSS, and the Nyuchi brand overlay.
-Two things are ours and are marked `TODO(mzizi)` or as proposals:
-`src/styles/maps-pill.css` (the pill and round-icon overlay) and
-`src/components/BottomNav.astro` (a phone bottom navigation; the registry has
-one for Rust and React only).
+Things that are ours are marked `TODO(mzizi)` or as proposals:
+`src/styles/maps-pill.css` (the pill and round-icon overlay),
+`src/components/BottomNav.astro` (a port of the registry's `mzizi-bottom-nav`,
+which has Rust and React builds only), `src/components/ThemeToggle.astro` and
+`public/shell.js` (a round theme switch in the sidebar footer, and a real button
+with `aria-expanded` for the shell's collapse toggle), and
+`src/components/RadixIcon.astro` (the icon seam: Radix icons, generated into
+`src/radix.ts` by `scripts/gen-radix.mjs`, stand in for every Mzizi icon, inside
+`@bundu/ui` too). `public/proposed-nyuchi-maps-icon.svg` is a proposal for the owner
+to approve, not a logo in use; the sidebar uses the official Nyuchi mark.
 
 The Explorer, Embed builder and Coverage pages draw the real map with the
 vendored MapLibre GL JS. They read styles and tiles from

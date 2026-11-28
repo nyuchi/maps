@@ -7,6 +7,14 @@ import DataTable from "@bundu/ui/app/DataTable.astro";
 import Card from "@bundu/ui/app/Card.astro";
 import Badge from "@bundu/ui/app/Badge.astro";
 import Sample from "../components/Sample.astro";
+import Button from "@bundu/ui/app/Button.astro";
+const tiers = [
+  ["Level 0", "Unverified", 9180],
+  ["Level 1", "Contact verified", 4930],
+  ["Level 2", "Documents checked", 1990],
+  ["Level 3", "Government verified", 1120],
+  ["Level 4", "Licensed professional", 340],
+];
 import { BASE } from "../lib";
 const rows = [
   { cell: { text: "6/50/31", mono: true }, state: { text: "Ready", tone: "success" }, build: { text: "20261127" }, size: { text: "99 MB" }, when: { text: "28 Nov, 10:00" } },
@@ -30,4 +38,24 @@ const rows = [
     <p class="text-body-sm text-muted-foreground">The outlined areas are stored in the main archive. A place outside them is requested when people look at it, and built in the background.</p>
   </div>
   <DataTable caption="On-demand regions" columns={[{ key: "cell", label: "Cell" }, { key: "state", label: "State" }, { key: "build", label: "Build" }, { key: "size", label: "Size" }, { key: "when", label: "Updated" }]} rows={rows} rowKey="cell" />
+  <div class="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+    <Card padding="md" class="grid content-start gap-[14px]">
+      <h2 class="text-body font-semibold">Places from Kweli</h2>
+      <p class="text-body-sm text-muted-foreground">The core places of the ecosystem, shown on the map as an optional layer. Counts are active, public places only.</p>
+      <StatTiles label="Places" columns={3}>
+        <StatTile label="Active public places" value={17560} note="Across 38 countries" />
+        <StatTile label="Verified, level 2 or more" value={3450} note="A fifth of all places" />
+        <StatTile label="Overlay rebuilt" value="Last night" note="Rebuilt every night" />
+      </StatTiles>
+    </Card>
+    <Card padding="md" class="grid content-start gap-[14px]">
+      <h2 class="text-body font-semibold">Verification legend</h2>
+      <ul role="list" class="grid gap-[14px]">
+        {tiers.map(([l, n, c]) => (
+          <li class="flex items-center justify-between gap-[14px] text-body-sm"><span class="flex items-center gap-[14px]"><Badge variant="secondary">{l}</Badge>{n}</span><span class="tabular-nums text-muted-foreground">{Number(c).toLocaleString("en-GB")}</span></li>
+        ))}
+      </ul>
+      <div><Button href="/explorer/" variant="outline" size="sm">Show on the map</Button></div>
+    </Card>
+  </div>
 </Shell>

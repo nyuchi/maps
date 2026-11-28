@@ -4,11 +4,12 @@ import {
 } from "/vendor/maplibre-gl/maplibre-gl.mjs";
 
 const dark = window.matchMedia("(prefers-color-scheme: dark)");
+const effective = () => document.documentElement.dataset.theme ?? (dark.matches ? "dark" : "light");
 const maps = [];
 for (const el of document.querySelectorAll("[data-map]")) {
   const base = el.dataset.base;
   const [lng, lat] = el.dataset.center.split(",").map(Number);
-  let style = el.dataset.style === "auto" ? (dark.matches ? "dark" : "light") : el.dataset.style;
+  let style = el.dataset.style === "auto" ? effective() : el.dataset.style;
   const map = new MapLibreMap({
     container: el,
     style: `${base}/v1/styles/${style}.json`,
@@ -51,4 +52,7 @@ for (const input of document.querySelectorAll("input[data-style-for]")) {
     target?.__maps?.set(input.value);
   });
 }
+window.addEventListener("themechange", () => {
+  for (const m of maps) if (m.el.dataset.style === "auto") m.set(effective());
+});
 window.__mapsReady = () => maps.every((m) => m.map.loaded());

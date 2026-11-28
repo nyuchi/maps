@@ -1,6 +1,11 @@
 // Sample data for the prototype. Every number here is fake and labelled as such on the page.
+/** Where the prototype draws its maps from (the origin Worker run locally). The pages DISPLAY the API URLs. */
 export const BASE = "http://localhost:8787";
-export const HOST = "https://maps.nyuchi.com";
+/** The one public API. Maps is a namespace of it (/v1/maps). */
+export const API = "https://api.nyuchi.com/v1/maps";
+/** This site: the dashboard, the embed page and the tile origin behind the API. */
+export const SITE = "https://maps.nyuchi.com";
+export const KEY = "nyk_EXAMPLE_ONLY";
 
 /** Deterministic pseudo-random series so screenshots are stable. */
 export function series(
