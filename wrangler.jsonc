@@ -50,6 +50,10 @@
     // ORIGIN_AUTH_KEYS ("kid:secret,kid:secret"), set with `wrangler secret
     // put`, never here. See docs/ARCHITECTURE.md, "Origin authentication".
     "ORIGIN_AUTH": "off",
+    // On-demand map regions: a tile the archive does not hold records demand;
+    // the region builder (on Coolify) builds the region and the Worker serves
+    // it once the manifest lists it. "off" or unset restores the old behaviour.
+    "ONDEMAND_REGIONS": "on",
     // Object key of the PMTiles archive inside the bucket.
     "TILES_KEY": "tiles/nyuchi-maps.pmtiles",
     // Part of the edge cache key. Bump it (and deploy) whenever the archive
