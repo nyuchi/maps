@@ -1,7 +1,7 @@
 # Building a regional PMTiles extract
 
-This documents how to produce the archive the map page shows: all of Africa,
-Madagascar and the nearby islands. **It is documentation only. Nothing here is run by CI, and
+This documents how to produce the archive the map page shows: all of Africa
+(with Madagascar and the nearby islands) and South East Asia. **It is documentation only. Nothing here is run by CI, and
 nothing in this repo runs it.** An extract reads only the byte ranges it needs
 from the remote Protomaps build, so it downloads a few tens of MB, not the
 planet. Do not download a full planet file for this.
@@ -22,15 +22,19 @@ Protomaps publishes daily planet builds. Look at the current list at
 `https://build.protomaps.com/<DATE>.pmtiles`. Confirm the URL on that page
 before you rely on it.
 
-## 3. Extract Africa
+## 3. Extract the regions
 
-[`extract-regions.geojson`](extract-regions.geojson) is one polygon, "Africa":
+[`extract-regions.geojson`](extract-regions.geojson) holds two features. The
+first is "Africa":
 the mainland with a sea margin, Madagascar, Cape Verde, the Canaries and
 Madeira, the Gulf of Guinea islands, the Comoros, the Seychelles and the
 Mascarenes (bounding box `-26.5,-35.5,64.5,37.6`). It leaves out Europe and
 most of Arabia; remote islands such as St Helena and Ascension are not in it.
-The map page opens on this area and a test keeps its bounds equal to the
-polygon's bounding box, so change both together.
+The second is "South East Asia": a polygon from Myanmar and Thailand through
+Vietnam, the Philippines, Malaysia, Singapore and Indonesia to the Papua
+border (bounding box `92,-11.5,141.5,28.6`, trimmed so most of southern China
+is out). The map page opens on a frame that shows both and a test keeps that
+frame inside the files' bounding box, so change both together.
 
 Always dry-run first: it prints the tile count and the bytes it would
 download, and downloads nothing.
@@ -46,8 +50,10 @@ pmtiles extract "https://build.protomaps.com/${BUILD}.pmtiles" nyuchi-maps.pmtil
 # Happy with the numbers? Run it again without --dry-run.
 ```
 
-Measured with `--dry-run` against build `20261126` (the Protomaps
-build size changes a little every day, and the real file is not yet built):
+Measured for the Africa feature alone, with `--dry-run` against build
+`20261126` (the Protomaps build size changes a little every day). The real
+extract of both features at `--maxzoom=14` from build `20261127` is 7.8 GB
+(8.1 GB downloaded, 4.5 minutes):
 
 | `--maxzoom` | Tiles in archive | Archive size | Downloaded |
 | ----------- | ---------------- | ------------ | ---------- |

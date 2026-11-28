@@ -48,7 +48,7 @@
     "TILES_KEY": "tiles/nyuchi-maps.pmtiles",
     // Part of the edge cache key. Bump it (and deploy) whenever the archive
     // object is replaced, so tiles cached from the old archive are retired.
-    "TILES_VERSION": "1",
+    "TILES_VERSION": "2",
   },
 
   // The binding NAME is what the code uses. The bucket holds the PMTiles

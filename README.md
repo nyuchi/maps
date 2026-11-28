@@ -17,8 +17,8 @@ owner provisions the DNS record, so nothing is served until then.
 
 ## The map
 
-`GET /` is a map for people: all of Africa, Madagascar and the nearby islands,
-in a light and a dark style. It follows the system colour scheme, remembers a
+`GET /` is a map for people: all of Africa (with Madagascar and the nearby islands) and
+South East Asia, in a light and a dark style. It follows the system colour scheme, remembers a
 manual choice in `localStorage` (no cookies), and has zoom, rotate, locate-me
 and scale controls. The credits shown on it come from the TileJSON, never from
 the page. It is mobile-first and keyboard accessible, and follows the Bundu
@@ -122,9 +122,9 @@ fonts/{font name}/{range}.pbf         the stacks the styles use:
 sprites/{light,dark}[@2x].{json,png}
 ```
 
-To produce the Africa archive see
-[`scripts/build-extract.md`](scripts/build-extract.md) (about 5.4 GB at
-maximum zoom 14, measured with `--dry-run`).
+To produce the Africa and South East Asia archive see
+[`scripts/build-extract.md`](scripts/build-extract.md) (about 7.8 GB at
+maximum zoom 14, measured from the real extract).
 
 ## Development
 
