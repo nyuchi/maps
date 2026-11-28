@@ -106,7 +106,17 @@ this first slice; see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 | `TILES_VERSION`   | var     | Part of the edge cache key; bump and deploy when the archive is replaced |
 | `TILES_KEY`       | var     | Object key of the archive, `tiles/nyuchi-maps.pmtiles`                   |
 
-There are no secrets. `workers_dev` and preview URLs are off, no route is
+Origin authentication for `/v1` (off by default; see
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#origin-authentication)):
+
+| Name                         | Kind   | What it is                                                                                             |
+| ---------------------------- | ------ | ------------------------------------------------------------------------------------------------------ |
+| `ORIGIN_AUTH`                | var    | `off` (default), `log` (verify and count, never reject) or `enforce` (`401` without a valid signature) |
+| `ORIGIN_AUTH_KEYS`           | secret | Verification keys, `kid:secret,kid:secret`; set with `wrangler secret put`, never in the file          |
+| `ORIGIN_AUTH_WINDOW_SECONDS` | var    | Optional. Credential lifetime and allowed clock skew, 5 to 300, default 60                             |
+
+The only secret is `ORIGIN_AUTH_KEYS`, and only once `ORIGIN_AUTH` is `log` or
+`enforce`. `workers_dev` and preview URLs are off, no route is
 enabled and observability is on. `ALLOWED_ORIGINS` in `wrangler.jsonc` is the
 production list only; for `wrangler dev` copy `.dev.vars.example` to `.dev.vars`
 to add `http://localhost:3000`. Nothing in this repo creates a bucket, a DNS record or a deployment.
