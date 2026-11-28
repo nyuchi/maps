@@ -70,7 +70,7 @@ const map = new MapLibreMap({
   maxPitch: 0,
   hash: true,
   // Credits come from the TileJSON the style points at; the page adds none.
-  attributionControl: { compact: false },
+  attributionControl: { compact: true },
 });
 
 map.addControl(new NavigationControl({ visualizePitch: false }), "top-right");
