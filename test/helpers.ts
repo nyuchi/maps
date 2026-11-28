@@ -174,6 +174,8 @@ export interface ArchiveOptions {
   tileCompression?: number; // 1 none, 2 gzip
   minZoom?: number;
   maxZoom?: number;
+  /** [west, south, east, north] in degrees; the Zimbabwe test box by default. */
+  bounds?: [number, number, number, number];
   /** JSON metadata block (stored uncompressed). */
   metadata?: Record<string, unknown>;
 }
@@ -188,6 +190,7 @@ export function buildPmtiles(
     tileCompression = 1,
     minZoom = 0,
     maxZoom = 3,
+    bounds = [25.2, -22.45, 33.1, -15.55],
     metadata: metadataObject = {},
   } = options;
   const sorted = tiles
@@ -239,10 +242,10 @@ export function buildPmtiles(
   dv.setUint8(99, tileType);
   dv.setUint8(100, minZoom);
   dv.setUint8(101, maxZoom);
-  dv.setInt32(102, Math.round(25.2 * 1e7), true); // min lon
-  dv.setInt32(106, Math.round(-22.45 * 1e7), true); // min lat
-  dv.setInt32(110, Math.round(33.1 * 1e7), true); // max lon
-  dv.setInt32(114, Math.round(-15.55 * 1e7), true); // max lat
+  dv.setInt32(102, Math.round(bounds[0] * 1e7), true); // min lon
+  dv.setInt32(106, Math.round(bounds[1] * 1e7), true); // min lat
+  dv.setInt32(110, Math.round(bounds[2] * 1e7), true); // max lon
+  dv.setInt32(114, Math.round(bounds[3] * 1e7), true); // max lat
   dv.setUint8(118, 5); // center zoom
   dv.setInt32(119, Math.round(31.05 * 1e7), true);
   dv.setInt32(123, Math.round(-17.83 * 1e7), true);

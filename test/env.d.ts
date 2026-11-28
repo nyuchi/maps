@@ -5,6 +5,9 @@ declare global {
   namespace Cloudflare {
     interface Env {
       MAPS_BUCKET: R2Bucket;
+      DEMAND: DurableObjectNamespace<
+        import("../src/regions/ledger").DemandLedger
+      >;
     }
   }
 }

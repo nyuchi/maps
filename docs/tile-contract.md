@@ -338,6 +338,15 @@ The Cloudflare Worker is one edge in front of the origin (#4). Any CDN that hono
 
 A fallback tile is a degraded answer, never truth. The placeholder depends on the kind **[ours]**. A `map` dataset gets a fully transparent PNG of tile size with status 200, so an image loader shows nothing and not an error. A `vector` dataset gets a 503 problem document, never a PNG, because an MVT decoder cannot read one; a client reports a failed vector tile and leaves it out (not run, section 10). Either way the response is labelled (`X-Map-Tile: unavailable`; #3 used `empty` for this case, but `empty` is better kept for "no data here"), carries `Cache-Control: no-store`, and never replaces a real answer in a cache. The source that served a tile is named in `X-Map-Source` (#3). Both headers are **[ours]** and not in the standards.
 
+### 8.3 Not-stored areas (on-demand regions)
+
+With on-demand regions enabled (`docs/ondemand-regions.md`), a tile at zoom 6 to 14 whose z6 cell is held by no archive is not an empty tile, it is a tile that is not stored yet. **[ours]** The contract for it:
+
+- Status `204` with `Cache-Control: public, max-age=30, s-maxage=60` and `X-Tile-Source: none`; never the long header of a stored tile or of an empty tile inside coverage. Optionally `200` with `X-Tile-Source: upstream` and `public, max-age=60, s-maxage=120`.
+- The same URL answers `200` with the stored-tile header once a region archive for its cell is published in the manifest; the cache key of a region tile carries the region object key, so a rebuild retires the tiles of the old build.
+- A tile inside coverage that the archive does not hold stays `204` with the long empty-tile header.
+- Invalid coordinates, a wrong extension, zoom below 6 or above 14 never create demand.
+
 ## 9. Examples
 
 Section 10.1 says which of these documents were validated and against what: 9.3, 9.5 and the full weather document behind 9.7 against the normative schemas; 9.1, 9.2 and 9.4 only for their required members; 9.6 is the output of the derivation and was not run through a TileJSON validator. The values are illustrative: the box is the Zimbabwe region of `scripts/extract-regions.geojson` at zooms 0 to 14, not a real archive. The licence on the base-map example is the README's working assumption, not a settled classification.

@@ -59,6 +59,18 @@ Status codes: a tile absent from the archive but inside its zoom range is `204`
 default to `no-store`); bad coordinates `400`; archive missing from the bucket
 `503 archive_unavailable` (`no-store`).
 
+## On-demand regions
+
+A tile in an area no archive holds yet (z6 to 14) is recorded as demand for its
+z6 cell and answered with a short-lived `204`; a service
+(`nyuchi/maps-region-builder`) extracts that cell from the Protomaps planet
+build, uploads `tiles/regions/<cell>-<build>.pmtiles` and the Worker's ledger
+publishes it in `tiles/regions.json`, after which the same URL is a `200`.
+Off unless `ONDEMAND_REGIONS=on`. Production traffic never reads the planet
+build (optional single-tile fallback excepted). Code is in `src/regions/`;
+decisions, protocol, caps and infra list are in
+[ondemand-regions.md](ondemand-regions.md).
+
 ## The dashboard
 
 `maps.nyuchi.com` is the tile origin plus a static developer dashboard. The

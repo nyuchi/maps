@@ -120,8 +120,21 @@ Origin authentication for `/v1` (off by default; see
 | `ORIGIN_AUTH_KEYS`           | secret | Verification keys, `kid:secret,kid:secret`; set with `wrangler secret put`, never in the file          |
 | `ORIGIN_AUTH_WINDOW_SECONDS` | var    | Optional. Credential lifetime and allowed clock skew, 5 to 300, default 60                             |
 
-The only secret is `ORIGIN_AUTH_KEYS`, and only once `ORIGIN_AUTH` is `log` or
-`enforce`. `workers_dev` and preview URLs are off, no route is
+On-demand regions (off unless `ONDEMAND_REGIONS` is `on`; see
+[docs/ondemand-regions.md](docs/ondemand-regions.md)):
+
+| Name                                                                                                                                               | Kind    | What it is                                                                     |
+| -------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------ |
+| `DEMAND`                                                                                                                                           | binding | Durable Object (SQLite) `DemandLedger`: demand, caps, the builder's work queue |
+| `ONDEMAND_REGIONS`                                                                                                                                 | var     | `on` enables regions; unset or anything else leaves the Worker as it was       |
+| `BUILDER_TOKEN`                                                                                                                                    | secret  | Bearer token of the region builder; unset disables `/internal/v1/regions`      |
+| `MANIFEST_KEY`, `MANIFEST_TTL_SECONDS`                                                                                                             | var     | Manifest object (`tiles/regions.json`) and its in-memory lifetime (60)         |
+| `FALLBACK_MODE`, `UPSTREAM_ALLOWED_HOST`, `UPSTREAM_TILES_PER_DAY`, `FALLBACK_TIMEOUT_MS`                                                          | var     | Optional single-tile read from the planet build; default is a short `204`      |
+| `DEMAND_MIN_TILES`, `DEMAND_IP_CELLS_PER_DAY`, `DEMAND_IP_HITS_PER_DAY`, `DEMAND_NEW_CELLS_PER_DAY`, `DEMAND_MAX_PENDING`, `DEMAND_REQUIRE_ORIGIN` | var     | Abuse caps (defaults in the design doc)                                        |
+
+The secrets are `ORIGIN_AUTH_KEYS` (only once `ORIGIN_AUTH` is `log` or
+`enforce`) and `BUILDER_TOKEN` (only once regions are enabled).
+`workers_dev` and preview URLs are off, no route is
 enabled and observability is on. `ALLOWED_ORIGINS` in `wrangler.jsonc` is the
 production list only; for `wrangler dev` copy `.dev.vars.example` to `.dev.vars`
 to add `http://localhost:3000`. Nothing in this repo creates a bucket, a DNS record or a deployment.
@@ -130,6 +143,8 @@ Bucket layout:
 
 ```text
 tiles/nyuchi-maps.pmtiles
+tiles/regions.json                    on-demand regions: the manifest (written by the ledger)
+tiles/regions/{cell}-{build}.pmtiles  on-demand regions: one archive per z6 cell
 fonts/OFL.txt                         copy of licenses/OFL-1.1-Noto-Sans.txt
 fonts/{font name}/{range}.pbf         the stacks the styles use:
     Noto Sans Regular, Noto Sans Medium, Noto Sans Italic,

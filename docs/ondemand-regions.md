@@ -1,7 +1,7 @@
 # On-demand regions
 
-Status: design, written 2026-11-28. The Worker side is built in a follow-up PR
-to this repository and the builder is the private repository
+Status: design, written 2026-11-28. The Worker side is built in `src/regions/`
+(tests in `test/regions.test.ts`) and the builder is the private repository
 `nyuchi/maps-region-builder`. Nothing here is deployed, and no Cloudflare
 resource has been created.
 
@@ -171,16 +171,16 @@ keeps repeated tiles of the same cell from calling it at all.
 
 Recording is idempotent and bounded:
 
-| Rule                | Default (all are vars)                                                                                                                                                                                                                                |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Valid input only    | Demand is recorded only after `parseTile` accepts the request, the zoom is within 6 to 14 and the extension matches the primary archive. 400/404 never record.                                                                                        |
-| Origin check        | The request must carry an allowed `Origin` (the `ALLOWED_ORIGINS` list, plus this host's own origin for the map page). A server-to-server call without one is answered but never records. Spoofable by a script, so it is one layer, not the defence. |
-| Distinct tiles      | A cell becomes pending only after `DEMAND_MIN_TILES` (3) distinct tiles in it have been requested. One stray tile does not trigger a region.                                                                                                          |
-| Per client, per day | `DEMAND_IP_CELLS_PER_DAY` (5) cells promoted and `DEMAND_IP_HITS_PER_DAY` (300) recorded hits per client. The client is a SHA-256 of IP and day, truncated; the raw address is never stored.                                                          |
-| Global, per day     | `DEMAND_NEW_CELLS_PER_DAY` (40) newly pending cells.                                                                                                                                                                                                  |
-| Backlog             | `DEMAND_MAX_PENDING` (100) cells pending or building at once.                                                                                                                                                                                         |
-| Dead cells          | A cell in the `dead` state is never re-queued by demand; only the owner re-arms it (section 8).                                                                                                                                                       |
-| Kill switch         | `ONDEMAND_REGIONS` unset or `off` disables recording, the ledger and the manifest read. Behaviour is then byte-identical to today.                                                                                                                    |
+| Rule                | Default (all are vars)                                                                                                                                                                                                                                                                      |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Valid input only    | Demand is recorded only after `parseTile` accepts the request, the zoom is within 6 to 14 and the extension matches the primary archive. 400/404 never record.                                                                                                                              |
+| Origin check        | The request must carry an allowed `Origin` (the `ALLOWED_ORIGINS` list) or a `Sec-Fetch-Site: same-origin` fetch from the map page (which sends no Origin). A server-to-server call with neither is answered but never records. Spoofable by a script, so it is one layer, not the defence. |
+| Distinct tiles      | A cell becomes pending only after `DEMAND_MIN_TILES` (3) distinct tiles in it have been requested. One stray tile does not trigger a region.                                                                                                                                                |
+| Per client, per day | `DEMAND_IP_CELLS_PER_DAY` (5) cells promoted and `DEMAND_IP_HITS_PER_DAY` (300) recorded hits per client. The client is a SHA-256 of IP and day, truncated; the raw address is never stored.                                                                                                |
+| Global, per day     | `DEMAND_NEW_CELLS_PER_DAY` (40) newly pending cells.                                                                                                                                                                                                                                        |
+| Backlog             | `DEMAND_MAX_PENDING` (100) cells pending or building at once.                                                                                                                                                                                                                               |
+| Dead cells          | A cell in the `dead` state is never re-queued by demand; only the owner re-arms it (section 8).                                                                                                                                                                                             |
+| Kill switch         | `ONDEMAND_REGIONS` unset or `off` disables recording, the ledger and the manifest read. Behaviour is then byte-identical to today.                                                                                                                                                          |
 
 Outcomes (`recorded`, `duplicate`, `below_threshold`, `ip_capped`,
 `global_capped`, `backlog_full`, `known`) are counted by the ledger per day and
@@ -257,7 +257,7 @@ Coolify. It is the only thing that reads the planet build.
 
 ### 7.1 Protocol with the Worker
 
-Four calls, all `Authorization: Bearer <BUILDER_TOKEN>`, on
+Five calls, all `Authorization: Bearer <BUILDER_TOKEN>`, on
 `/internal/v1/regions/`. The token is a Worker secret; if it is not set the
 routes answer `404` (disabled). They are not in the public OpenAPI file. Auth
 failures are rate limited like any other request.
@@ -327,8 +327,7 @@ variables from Coolify. The container is non-root.
 
 ## 8. Re-arming and refreshing
 
-- A `dead` cell is re-armed by the owner by calling the ledger's state endpoint
-  with a re-arm request through the builder CLI (`maps-region-builder rearm
+- A `dead` cell is re-armed by the owner with `POST rearm`, through the builder CLI (`maps-region-builder rearm
 6/50/31`), which uses the same token.
 - Refreshing a region to a newer build is not automatic. It is the same
   `claim` flow with `refresh` requested by the owner; the new object key
@@ -343,8 +342,9 @@ variables from Coolify. The container is non-root.
 One JSON line per event with `console.log`, picked up by Workers Observability
 (already `enabled` in `wrangler.jsonc`):
 
-- `{"event":"maps.tile","source":"primary|region|upstream|none","z":..,"cell":"6/x/y"}`
-  is **not** logged per tile (volume). Instead:
+Per-tile events are deliberately not logged (volume); the response header
+`X-Tile-Source` says where a tile came from.
+
 - `{"event":"maps.demand","outcome":"recorded|...","cell":"6/50/31"}` per
   ledger call;
 - `{"event":"maps.fallback","mode":"empty|upstream","result":"served|timeout|error|budget","cell":".."}`

@@ -82,6 +82,14 @@ paths:
         basemap). The body is passed through still compressed and carries
         `Content-Encoding: gzip` when the archive stores gzip tiles.
         A tile the archive does not hold, inside its zoom range, is `204`.
+
+        With on-demand regions enabled, a tile at zoom 6 to 14 in an area no
+        archive holds yet is also `204`, but with a short `Cache-Control`
+        (`max-age=30, s-maxage=60`) and `X-Tile-Source: none`: the area is
+        queued for a region build and the same URL answers `200` once it
+        lands. Optionally the answer is a `200` with `X-Tile-Source: upstream`
+        and a short cache. Stored tiles carry `X-Tile-Source: primary` or
+        `region`. See docs/ondemand-regions.md.
       parameters:
         - {name: z, in: path, required: true, schema: {type: integer, minimum: 0, maximum: 22}}
         - {name: x, in: path, required: true, schema: {type: integer, minimum: 0}}
@@ -97,6 +105,7 @@ paths:
             ETag: {$ref: "#/components/headers/ETag"}
             Cache-Control: {$ref: "#/components/headers/CacheControl"}
             Content-Encoding: {schema: {type: string, enum: [gzip]}}
+            X-Tile-Source: {$ref: "#/components/headers/TileSource"}
           content:
             application/vnd.mapbox-vector-tile:
               schema: {type: string, format: binary}
@@ -111,7 +120,12 @@ paths:
             image/avif:
               schema: {type: string, format: binary}
         "204":
-          description: No tile here (inside the archive's zoom range).
+          description: |
+            No tile here: inside coverage and empty (long cache), or not
+            stored yet (short cache, on-demand regions only).
+          headers:
+            Cache-Control: {$ref: "#/components/headers/CacheControl"}
+            X-Tile-Source: {$ref: "#/components/headers/TileSource"}
         "304": {$ref: "#/components/responses/NotModified"}
         "400": {$ref: "#/components/responses/BadRequest"}
         "401": {$ref: "#/components/responses/Unauthorized"}
@@ -275,6 +289,11 @@ components:
     CacheControl:
       description: Edge and browser caching policy.
       schema: {type: string}
+    TileSource:
+      description: |
+        Where the tile came from, present only with on-demand regions
+        enabled: `primary`, `region`, `upstream` or `none`.
+      schema: {type: string, enum: [primary, region, upstream, none]}
   schemas:
     Problem:
       description: RFC 9457 problem details.
