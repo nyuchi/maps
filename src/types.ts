@@ -1,4 +1,6 @@
 export interface Env {
+  /** Static assets binding: the map page and its files (public/). */
+  ASSETS: Fetcher;
   /** R2 bucket holding the PMTiles archive, glyphs and sprites. */
   MAPS_BUCKET: R2Bucket;
   /** Workers rate limiting binding, keyed by client IP. */

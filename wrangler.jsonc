@@ -19,8 +19,19 @@
   // openapi/openapi.yaml is imported as text and served at /openapi.json.
   "rules": [{ "type": "Text", "globs": ["**/*.yaml"], "fallthrough": true }],
 
+  // The map page (GET /) and its assets: public/ is built by
+  // scripts/build-web.mjs (`npm run build:web`) and committed. The Worker
+  // runs first for every request, so /v1 is untouched and src/web.ts adds the
+  // security and cache headers; it reaches the files through ASSETS.
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+  },
+
   // Not active until the maps.nyuchi.com DNS record exists. The owner
-  // uncomments this, then deploys.
+  // uncomments this, then deploys. The map page is live at / the moment this
+  // route is, with no further change (the assets above ship in the deploy).
   // "routes": [{ "pattern": "maps.nyuchi.com", "custom_domain": true }],
 
   "vars": {

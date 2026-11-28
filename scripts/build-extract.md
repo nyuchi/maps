@@ -1,7 +1,7 @@
 # Building a regional PMTiles extract
 
-This documents how to produce the small archive for the first slice: Zimbabwe
-plus a few cities. **It is documentation only. Nothing here is run by CI, and
+This documents how to produce the archive the map page shows: all of Africa,
+Madagascar and the nearby islands. **It is documentation only. Nothing here is run by CI, and
 nothing in this repo runs it.** An extract reads only the byte ranges it needs
 from the remote Protomaps build, so it downloads a few tens of MB, not the
 planet. Do not download a full planet file for this.
@@ -22,25 +22,43 @@ Protomaps publishes daily planet builds. Look at the current list at
 `https://build.protomaps.com/<DATE>.pmtiles`. Confirm the URL on that page
 before you rely on it.
 
-## 3. Extract the regions
+## 3. Extract Africa
 
-[`extract-regions.geojson`](extract-regions.geojson) holds four boxes: Zimbabwe
-(`25.2,-22.45,33.1,-15.55`) and small boxes around Lusaka, Nairobi and
-Singapore. Edit it to change the set.
+[`extract-regions.geojson`](extract-regions.geojson) is one polygon, "Africa":
+the mainland with a sea margin, Madagascar, Cape Verde, the Canaries and
+Madeira, the Gulf of Guinea islands, the Comoros, the Seychelles and the
+Mascarenes (bounding box `-26.5,-35.5,64.5,37.6`). It leaves out Europe and
+most of Arabia; remote islands such as St Helena and Ascension are not in it.
+The map page opens on this area and a test keeps its bounds equal to the
+polygon's bounding box, so change both together.
+
+Always dry-run first: it prints the tile count and the bytes it would
+download, and downloads nothing.
 
 ```sh
 BUILD=20261001   # a date from the builds page
 
 pmtiles extract "https://build.protomaps.com/${BUILD}.pmtiles" nyuchi-maps.pmtiles \
   --region=scripts/extract-regions.geojson \
-  --maxzoom=14
+  --maxzoom=14 \
+  --dry-run
+
+# Happy with the numbers? Run it again without --dry-run.
 ```
 
-- `--maxzoom=14` keeps the archive small. Dropping it keeps the source's
-  maximum zoom (15) and grows the file.
-- Add `--dry-run` first: it prints the number of tiles and the bytes it would
-  download, and downloads nothing.
-- For a single box, `--bbox=25.2,-22.45,33.1,-15.55` replaces `--region`.
+Measured with `--dry-run` against build `20261126` (the Protomaps
+build size changes a little every day, and the real file is not yet built):
+
+| `--maxzoom` | Tiles in archive | Archive size | Downloaded |
+| ----------- | ---------------- | ------------ | ---------- |
+| 12          | 451,373          | 1.3 GB       | 1.4 GB     |
+| 13          | 1,572,108        | 2.8 GB       | 3.0 GB     |
+| 14          | 5,167,792        | 5.4 GB       | 5.7 GB     |
+| 15          | 16,149,797       | 12 GB        | 13 GB      |
+
+`--maxzoom=14` is the recommended trade-off (street level). The real run
+takes minutes on a good link. R2 objects over about 300 MB need an
+S3-compatible client (see step 6).
 
 ## 4. Check it
 

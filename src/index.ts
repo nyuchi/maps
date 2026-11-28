@@ -33,6 +33,7 @@ import {
   type SourceDef,
 } from "./sources";
 import { buildStyle } from "./styles";
+import { mapAsset, mapPage, staticFile } from "./web";
 import type { AppEnv } from "./types";
 import {
   isName,
@@ -72,6 +73,12 @@ export function createApp(
       { headers: { "Cache-Control": NO_STORE } },
     ),
   );
+
+  // The map page and its static files (public/, through the ASSETS binding).
+  app.get("/", mapPage);
+  app.get("/assets/*", mapAsset);
+  app.get("/favicon.svg", staticFile);
+  app.get("/robots.txt", staticFile);
 
   let openapiJson: unknown;
   app.get("/openapi.json", (c) => {
