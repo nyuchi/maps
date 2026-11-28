@@ -301,6 +301,8 @@ describe("page sources", () => {
     expect(appJs).toContain("attributionControl");
     // Like Google Maps: a small (i) that opens the line, not a box on the map.
     expect(appJs).toMatch(/attributionControl:\s*\{\s*compact:\s*true/);
+    // Closed by default: one tap on the (i) opens the credits.
+    expect(appJs).toContain("closeCredits");
     expect(appJs).not.toContain("customAttribution");
   });
 

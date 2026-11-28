@@ -73,6 +73,21 @@ const map = new MapLibreMap({
   attributionControl: { compact: true },
 });
 
+// The credits start closed, behind the small (i): MapLibre's compact control
+// opens itself on a wide screen, so close it here. One tap opens it again.
+function closeCredits() {
+  const credits = document.querySelector(".maplibregl-ctrl-attrib");
+  if (credits) {
+    credits.removeAttribute("open");
+    credits.classList.remove("maplibregl-compact-show");
+  }
+}
+closeCredits();
+// MapLibre opens the control the first time the credits are known, which is
+// after the style and the first tiles arrive, so close it again when the map
+// first goes idle.
+map.once("idle", closeCredits);
+
 map.addControl(new NavigationControl({ visualizePitch: false }), "top-right");
 map.addControl(
   new GeolocateControl({
