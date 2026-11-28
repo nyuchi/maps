@@ -601,6 +601,11 @@ describe("page sources", () => {
     return css;
   }
 
+  it("renders the sidebar collapsed by default (a closed panel until opened)", async () => {
+    const html = await (await SELF.fetch("https://maps.test/")).text();
+    expect(html).toMatch(/<input[^>]*data-shell-collapse[^>]*\schecked[\s>]/);
+  });
+
   it("never writes a credit by hand: attribution comes from the TileJSON", async () => {
     const forbidden = /openstreetmap|©|&copy;|protomaps/i;
     for (const [file, source] of Object.entries(SOURCES)) {
