@@ -277,8 +277,12 @@ body {
   line-height: var(--leading-floor);
 }
 
-/* The credits are always visible: the ODbL asks for them wherever a map is
-   shown. Their text comes from the TileJSON, never from this file. */
+/* The credits sit behind a small (i), as on Google Maps: a quiet button in the
+   corner that opens the line, not a box on the map. The page still opens with
+   the line showing (MapLibre's compact control does that) and tucks it away
+   once someone moves the map, and one tap brings it back. The ODbL asks for the
+   credits wherever a map is shown: they are one tap away, never removed. Their
+   text comes from the TileJSON, never from this file. */
 .maplibregl-ctrl-bottom-right {
   right: var(--pad-right);
   bottom: var(--pad-bottom);
@@ -289,19 +293,49 @@ body {
 }
 
 .maplibregl-ctrl.maplibregl-ctrl-attrib {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  position: relative;
+  box-sizing: border-box;
+  min-width: var(--hit);
   min-height: var(--hit);
-  padding: 0 var(--space-control-between);
-  border: 2px solid var(--edge);
-  border-radius: 12px;
-  background: var(--surface);
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
   color: var(--text);
-  /* Credits are a caption: 15px keeps both on one line on a 390px phone. */
   font-size: 15px;
   line-height: var(--leading-floor);
   max-width: calc(100vw - var(--pad-left) - var(--pad-right));
+}
+
+/* The closed state: the whole hit region is the button, and only a small,
+   soft (i) shows. It keeps the 45px touch / 24px desktop hit region. */
+.maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button {
+  top: 0;
+  right: 0;
+  width: var(--hit);
+  height: var(--hit);
+  border-radius: 999px;
+  background-color: transparent;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 20px;
+  opacity: 0.8;
+  filter: var(--icon-filter);
+}
+
+.maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button:hover {
+  opacity: 1;
+  background-color: color-mix(in srgb, var(--surface) 80%, transparent);
+}
+
+/* The open state: the credits as one readable line, with the (i) kept on the
+   right so a second tap closes it. */
+.maplibregl-ctrl.maplibregl-ctrl-attrib.maplibregl-compact-show {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--hit) 0 var(--space-control-between);
+  border: 2px solid var(--edge);
+  background: var(--surface);
 }
 
 .maplibregl-ctrl-attrib a {
@@ -311,10 +345,6 @@ body {
   padding: 0 4px;
   color: var(--text);
   text-decoration: underline;
-}
-
-.maplibregl-ctrl-attrib.maplibregl-compact-show {
-  background: var(--surface);
 }
 
 .maplibregl-ctrl-attrib-inner {

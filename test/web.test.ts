@@ -299,6 +299,8 @@ describe("page sources", () => {
       expect(source).not.toMatch(/openstreetmap|©|&copy;|protomaps/i);
     }
     expect(appJs).toContain("attributionControl");
+    // Like Google Maps: a small (i) that opens the line, not a box on the map.
+    expect(appJs).toMatch(/attributionControl:\s*\{\s*compact:\s*true/);
     expect(appJs).not.toContain("customAttribution");
   });
 
