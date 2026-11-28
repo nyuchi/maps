@@ -272,20 +272,33 @@ body {
   margin: 0;
 }
 
+/* The scale is not a box: no fill, no frame, just the line and its label. The
+   text is outlined in the surface colour so it stays readable on any map
+   colour, light or dark. */
 .maplibregl-ctrl-scale {
   box-sizing: content-box;
   padding: 0 var(--space-control-between);
   border-color: var(--text);
-  background: var(--surface);
+  border-width: 0 2px 2px;
+  background: transparent;
   color: var(--text);
-  font-size: var(--body);
+  font-size: 15px;
+  font-weight: 600;
   line-height: var(--leading-floor);
+  text-shadow:
+    -1.5px -1.5px 0 var(--surface),
+    1.5px -1.5px 0 var(--surface),
+    -1.5px 1.5px 0 var(--surface),
+    1.5px 1.5px 0 var(--surface),
+    0 -1.5px 0 var(--surface),
+    0 1.5px 0 var(--surface),
+    -1.5px 0 0 var(--surface),
+    1.5px 0 0 var(--surface);
 }
 
 /* The credits sit behind a small (i), as on Google Maps: a quiet button in the
-   corner that opens the line, not a box on the map. The page still opens with
-   the line showing (MapLibre's compact control does that) and tucks it away
-   once someone moves the map, and one tap brings it back. The ODbL asks for the
+   corner that opens the line, not a box on the map. It is closed when the page
+   opens, and one tap shows the line. The ODbL asks for the
    credits wherever a map is shown: they are one tap away, never removed. Their
    text comes from the TileJSON, never from this file. */
 .maplibregl-ctrl-bottom-right {
