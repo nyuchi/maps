@@ -489,6 +489,22 @@ describe("builder protocol", () => {
     expect((await post("/claim", {}, env)).status).toBe(204);
   });
 
+  it("is outside the /v1 origin-auth gate and keeps its own bearer token", async () => {
+    const env = renv({
+      ORIGIN_AUTH: "enforce",
+      ORIGIN_AUTH_KEYS: "k1:test-secret-0123456789abcdef",
+    });
+    // No origin credential: the builder is still served (bearer only)...
+    expect((await post("/claim", {}, env)).status).toBe(204);
+    // ...and a missing or wrong bearer is still refused by its own check.
+    expect(
+      (await post("/claim", {}, env, { "Content-Type": "application/json" }))
+        .status,
+    ).toBe(401);
+    // While /v1 on the same env needs the origin credential.
+    expect((await call("/v1/tiles.json", env)).status).toBe(401);
+  });
+
   it("retries a failed build with backoff, then buries it", async () => {
     const env = renv();
     const stub = ledger(env);
