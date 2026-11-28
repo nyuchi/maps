@@ -9,7 +9,8 @@
 #
 # Until the owner has created the R2 bucket (and put its real name in
 # wrangler.jsonc) a deploy fails at the bucket binding: that is intended.
-# The maps.nyuchi.com route is NOT enabled in wrangler.jsonc and workers_dev
+# The deploy ships the committed public/ (the map page); `npm run build`
+# first checks it is up to date. The maps.nyuchi.com route is NOT enabled in wrangler.jsonc and workers_dev
 # is off, so a deployed Worker has no public URL until the route is turned
 # on; the smoke test then needs SMOKE_TEST_URL and is skipped without it.
 

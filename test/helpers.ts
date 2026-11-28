@@ -84,9 +84,33 @@ export class StubBucket {
 
 export const ALLOWED = "https://weather.mukoko.com,http://localhost:3000";
 
+/** A stand-in for the ASSETS binding: serves the given files by path. */
+export function stubAssets(files: Record<string, string> = {}): Fetcher {
+  return {
+    fetch: async (input: RequestInfo | URL) => {
+      const url = new URL(
+        typeof input === "string" || input instanceof URL
+          ? input
+          : (input as Request).url,
+      );
+      const body = files[url.pathname];
+      if (body === undefined) return new Response("not found", { status: 404 });
+      const type = url.pathname.endsWith(".js")
+        ? "text/javascript"
+        : url.pathname.endsWith(".css")
+          ? "text/css"
+          : "text/html; charset=utf-8";
+      return new Response(body, {
+        headers: { "Content-Type": type, ETag: '"asset"' },
+      });
+    },
+  } as unknown as Fetcher;
+}
+
 export function makeEnv(bucket: StubBucket, overrides: Partial<Env> = {}): Env {
   return {
     MAPS_BUCKET: bucket as unknown as R2Bucket,
+    ASSETS: stubAssets(),
     RATE_LIMITER: { limit: async () => ({ success: true }) },
     PUBLIC_BASE_URL: "https://maps.nyuchi.com",
     ALLOWED_ORIGINS: ALLOWED,

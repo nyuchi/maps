@@ -1,0 +1,334 @@
+/*
+ * Nyuchi Maps page. Plain CSS, no framework.
+ *
+ * Bundu floor (mzizi get_tokens family=floors): hit region 45px on touch and
+ * 24px on a desktop, body 17px on touch and 15px on a desktop, 1.5 body
+ * leading, 14px inset, 9px between adjacent controls. Text colours are held
+ * to 7:1 (WCAG) and APCA Lc 60 or more; see docs/ARCHITECTURE.md.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  /* Floors, named after the Mzizi custom properties. */
+  --inset-floor: 14px;
+  --space-control-between: 9px;
+  --leading-floor: 1.5;
+  --hit: 45px;
+  --body: 17px;
+  --drawn: 45px;
+
+  --surface: #ffffff;
+  --text: #1a1917;
+  --muted: #4a463f;
+  --edge: #8c877e;
+  --accent: #4b0082;
+  --ring: #0047ab;
+  --icon-filter: none;
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --pad-top: calc(var(--inset-floor) + var(--safe-top));
+  --pad-right: calc(var(--inset-floor) + var(--safe-right));
+  --pad-bottom: calc(var(--inset-floor) + var(--safe-bottom));
+  --pad-left: calc(var(--inset-floor) + var(--safe-left));
+}
+
+/* Before the script runs (and with no script) follow the system. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --surface: #1c1b19;
+    --text: #f3f1ec;
+    --muted: #c9c5bc;
+    --edge: #8c877e;
+    --accent: #b388ff;
+    --ring: #00b0ff;
+    --icon-filter: invert(1);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface: #1c1b19;
+  --text: #f3f1ec;
+  --muted: #c9c5bc;
+  --edge: #8c877e;
+  --accent: #b388ff;
+  --ring: #00b0ff;
+  --icon-filter: invert(1);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+/* Desktop tier: a fine pointer with hover, 64rem and up, no coarse pointer. */
+@media (min-width: 64rem) and (hover: hover) and (pointer: fine) and (not (any-pointer: coarse)) {
+  :root {
+    --hit: 24px;
+    --drawn: 32px;
+    --body: 15px;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--surface);
+  color: var(--text);
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Noto Sans",
+    sans-serif;
+  font-size: var(--body);
+  line-height: var(--leading-floor);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+#map {
+  position: fixed;
+  inset: 0;
+}
+
+/* The map is the page: a focus ring that is visible on every tile colour. */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* ---- Top bar --------------------------------------------------------- */
+
+.bar {
+  position: fixed;
+  z-index: 2;
+  top: var(--pad-top);
+  left: var(--pad-left);
+  display: flex;
+  align-items: center;
+  gap: var(--space-control-between);
+  max-width: calc(
+    100% - var(--pad-left) - var(--pad-right) - var(--drawn) - 9px
+  );
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  min-height: var(--drawn);
+  margin: 0;
+  padding: 0 var(--inset-floor);
+  border: 2px solid var(--edge);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--body);
+  font-weight: 600;
+  line-height: var(--leading-floor);
+}
+
+.chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-control-between);
+  min-height: var(--drawn);
+  padding: 0 var(--inset-floor);
+  border: 2px solid var(--edge);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Dense controls keep the full hit region: grow it past the drawn edge. */
+.chip::after,
+.maplibregl-ctrl-group button::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, var(--hit));
+  height: max(100%, var(--hit));
+  transform: translate(-50%, -50%);
+}
+
+.chip:hover {
+  border-color: var(--accent);
+}
+
+.chip-mark {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--text);
+  border-radius: 50%;
+  background: linear-gradient(90deg, var(--text) 50%, transparent 50%);
+}
+
+#theme[aria-checked="true"] .chip-mark {
+  background: linear-gradient(90deg, transparent 50%, var(--text) 50%);
+}
+
+/* ---- Status and no-script messages ----------------------------------- */
+
+.status {
+  position: fixed;
+  z-index: 3;
+  left: var(--pad-left);
+  right: var(--pad-right);
+  bottom: calc(var(--pad-bottom) + var(--hit) + var(--space-control-between));
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: var(--inset-floor);
+  border: 2px solid var(--edge);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.status[hidden] {
+  display: none;
+}
+
+.status p {
+  margin: 0 0 var(--space-control-between);
+}
+
+/* ---- MapLibre controls, fitted to the floor -------------------------- */
+
+.maplibregl-ctrl-top-right {
+  top: var(--pad-top);
+  right: var(--pad-right);
+}
+
+.maplibregl-ctrl-top-right .maplibregl-ctrl {
+  margin: 0 0 var(--space-control-between) 0;
+}
+
+/* One bordered button each: adjacent controls keep the gap, never touch. */
+.maplibregl-ctrl-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-control-between);
+  background: none;
+  box-shadow: none;
+}
+
+.maplibregl-ctrl-group button,
+.maplibregl-ctrl-group button + button {
+  position: relative;
+  width: var(--drawn);
+  height: var(--drawn);
+  border: 2px solid var(--edge);
+  border-radius: 12px;
+  background-color: var(--surface);
+}
+
+.maplibregl-ctrl-group button:hover:not(:disabled) {
+  background-color: var(--surface);
+  border-color: var(--accent);
+}
+
+.maplibregl-ctrl button .maplibregl-ctrl-icon {
+  filter: var(--icon-filter);
+}
+
+.maplibregl-ctrl button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/* Scale bar sits above the credit strip. */
+.maplibregl-ctrl-bottom-left {
+  left: var(--pad-left);
+  bottom: calc(var(--pad-bottom) + var(--hit) + var(--space-control-between));
+}
+
+.maplibregl-ctrl-bottom-left .maplibregl-ctrl {
+  margin: 0;
+}
+
+.maplibregl-ctrl-scale {
+  box-sizing: content-box;
+  padding: 0 var(--space-control-between);
+  border-color: var(--text);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--body);
+  line-height: var(--leading-floor);
+}
+
+/* The credits are always visible: the ODbL asks for them wherever a map is
+   shown. Their text comes from the TileJSON, never from this file. */
+.maplibregl-ctrl-bottom-right {
+  right: var(--pad-right);
+  bottom: var(--pad-bottom);
+}
+
+.maplibregl-ctrl-bottom-right .maplibregl-ctrl {
+  margin: 0;
+}
+
+.maplibregl-ctrl.maplibregl-ctrl-attrib {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: var(--hit);
+  padding: 0 var(--space-control-between);
+  border: 2px solid var(--edge);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  /* Credits are a caption: 15px keeps both on one line on a 390px phone. */
+  font-size: 15px;
+  line-height: var(--leading-floor);
+  max-width: calc(100vw - var(--pad-left) - var(--pad-right));
+}
+
+.maplibregl-ctrl-attrib a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hit);
+  padding: 0 4px;
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.maplibregl-ctrl-attrib.maplibregl-compact-show {
+  background: var(--surface);
+}
+
+.maplibregl-ctrl-attrib-inner {
+  display: flex;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  align-items: center;
+  /* The separators between credits are plain text. */
+  gap: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}
