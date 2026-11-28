@@ -1,0 +1,20 @@
+{
+  "name": "maps-console-prototype",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prepare:assets": "mkdir -p public/vendor public/data && cp -R ../../public/assets/vendor/maplibre-gl/6.19.0 public/vendor/maplibre-gl && cp ../../scripts/extract-regions.geojson public/data/",
+    "build": "npm run prepare:assets && astro build"
+  },
+  "dependencies": {
+    "astro": "7.4.13",
+    "@tailwindcss/vite": "4.3.5",
+    "tailwindcss": "4.3.5",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "tailwind-merge": "3.7.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "@bundu/ui": "0.17.0"
+  }
+}

@@ -1,0 +1,25 @@
+/*
+ * Nyuchi Maps developer console, prototype stylesheet: Tailwind v4 over the
+ * Mzizi tokens from @bundu/ui, the Nyuchi brand overlay last, then the pill
+ * overlay (maps-pill.css) that this design proposes for the Dashboard Standard.
+ */
+@import "tailwindcss";
+@import "@bundu/ui/styles/theme.css";
+@import "@bundu/ui/styles/globals.css";
+@import "@bundu/ui/styles/color-scheme.css";
+@import "@bundu/ui/styles/brand-nyuchi.css";
+@import "./maps-pill.css";
+@source "../../node_modules/@bundu/ui/src";
+@source "../";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  td,
+  dd {
+    overflow-wrap: break-word;
+  }
+}

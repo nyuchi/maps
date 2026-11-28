@@ -1,0 +1,13 @@
+---
+// TODO(mzizi): a pure Astro build of mzizi-bottom-nav (the registry has it for Rust/Dioxus
+// and React only). Four to five items, 45px hit regions, current item marked, "More" opens
+// the shell's drawer (the same popover the top bar's menu button opens).
+import Icon from "@bundu/ui/Icon.astro";
+const { items, current, drawer } = Astro.props;
+---
+<nav class="maps-bottom-nav" aria-label="Primary">
+  {items.map((i) => (
+    <a href={i.href} aria-current={i.href === current ? "page" : undefined}><Icon name={i.icon} /><span>{i.label}</span></a>
+  ))}
+  <button type="button" popovertarget={drawer}><Icon name="menu" /><span>More</span></button>
+</nav>

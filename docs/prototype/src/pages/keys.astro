@@ -1,0 +1,52 @@
+---
+import Shell from "../layouts/Shell.astro";
+import PageHeader from "@bundu/ui/app/PageHeader.astro";
+import Card from "@bundu/ui/app/Card.astro";
+import Button from "@bundu/ui/app/Button.astro";
+import Badge from "@bundu/ui/app/Badge.astro";
+import Alert from "@bundu/ui/app/Alert.astro";
+import DataTable from "@bundu/ui/app/DataTable.astro";
+import FormField from "@bundu/ui/app/FormField.astro";
+import SegmentedControl from "@bundu/ui/SegmentedControl.astro";
+import Icon from "@bundu/ui/Icon.astro";
+import Copy from "../components/Copy.astro";
+import Sample from "../components/Sample.astro";
+const rows = [
+  { name: { text: "Weather web", sub: "Created 12 Oct 2026" }, key: { text: "nyk_7Qp…x2", mono: true }, type: { text: "Publishable", tone: "info" }, origins: { text: "2 origins" }, limit: { text: "600 / min" }, used: { text: "2 minutes ago" }, status: { text: "Active", tone: "success" } },
+  { name: { text: "Docs site", sub: "Created 3 Nov 2026" }, key: { text: "nyk_Kd3…m9", mono: true }, type: { text: "Publishable", tone: "info" }, origins: { text: "1 origin" }, limit: { text: "300 / min" }, used: { text: "1 hour ago" }, status: { text: "Active", tone: "success" } },
+  { name: { text: "Region builder", sub: "Created 20 Nov 2026" }, key: { text: "nys_…c41", mono: true }, type: { text: "Secret", tone: "premium" }, origins: { text: "Servers only" }, limit: { text: "1,800 / min" }, used: { text: "Yesterday" }, status: { text: "Active", tone: "success" } },
+  { name: { text: "Old prototype", sub: "Created 1 Sep 2026" }, key: { text: "nyk_Zx0…p3", mono: true }, type: { text: "Publishable", tone: "info" }, origins: { text: "1 origin" }, limit: { text: "300 / min" }, used: { text: "40 days ago" }, status: { text: "Revoked", tone: "neutral" } },
+];
+const cols = [
+  { key: "name", label: "Name" }, { key: "key", label: "Key" }, { key: "type", label: "Type" }, { key: "origins", label: "Origins" },
+  { key: "limit", label: "Rate limit" }, { key: "used", label: "Last used" }, { key: "status", label: "Status" },
+];
+---
+<Shell title="API keys" current="/keys/">
+  <PageHeader title="API keys" description="Keys are issued and checked by the Nyuchi API. Publishable keys go in web pages and are tied to the origins you list. Secret keys stay on servers." docsHref="https://docs.nyuchi.com" crumbs={[{ label: "Console", href: "#" }, { label: "Maps", href: "/" }, { label: "API keys" }]}>
+    <Fragment slot="actions"><Button href="#new" variant="primary"><Icon name="plus" class="maps-icon" />Create a key</Button></Fragment>
+  </PageHeader>
+  <Sample />
+  <DataTable caption="Keys for Nyuchi Africa" columns={cols} rows={rows} rowKey="key" />
+  <div class="grid gap-5 lg:grid-cols-2">
+    <Card padding="md" class="grid content-start gap-[14px]" id="new">
+      <h2 class="text-body font-semibold">Create a key</h2>
+      <FormField name="name" label="Name" value="My website" />
+      <SegmentedControl name="ktype" legend="Type" size="sm" value="pub" options={[["pub", "Publishable"], ["sec", "Secret"]]} />
+      <FormField name="origins" label="Allowed origins" as="textarea" rows={3} value={"https://www.example.com\nhttps://*.example.org"} hint="One per line. A publishable key works only from these origins. Wildcards match subdomains." />
+      <FormField name="limit" label="Rate limit" as="select" value="300" options={[{ value: "300", label: "300 requests a minute" }, { value: "600", label: "600 requests a minute" }]} hint="Your plan allows up to 600." />
+      <div class="flex flex-wrap gap-[9px]"><Button variant="primary">Create key</Button><Button variant="ghost">Cancel</Button></div>
+    </Card>
+    <Card padding="md" class="grid content-start gap-[14px]">
+      <h2 class="text-body font-semibold">After you create a secret key</h2>
+      <Alert variant="warning" title="Copy it now">This is the only time the secret is shown. We store a hash, never the secret. If you lose it, rotate the key.</Alert>
+      <div class="grid gap-2">
+        <p class="text-body-sm text-muted-foreground">Client ID</p>
+        <div class="flex items-center justify-between gap-[14px] rounded-full bg-muted px-[14px] py-[7px]"><code class="font-mono text-body-sm">nyk_EXAMPLE_ONLY</code><Copy text="nyk_EXAMPLE_ONLY" label="Copy" /></div>
+        <p class="mt-2 text-body-sm text-muted-foreground">Secret</p>
+        <div class="flex items-center justify-between gap-[14px] rounded-full bg-muted px-[14px] py-[7px]"><code class="font-mono text-body-sm">nys_••••••••••••••••</code><Copy text="nys_EXAMPLE_ONLY" label="Copy" /></div>
+      </div>
+      <p class="text-body-sm text-muted-foreground">Never put a secret key in a web page or a URL. Send it in the <code class="font-mono">X-Client-Secret</code> header from your server.</p>
+    </Card>
+  </div>
+</Shell>

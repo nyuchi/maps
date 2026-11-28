@@ -1,0 +1,238 @@
+/*
+ * Pill overlay (owner rule): text buttons, chips and badges are pills; icon-only
+ * controls are round; elevation is soft and borders are quiet.
+ *
+ * The Dashboard Standard draws these at --radius-sm (7px) with a hairline
+ * border. This file repoints the one radius the standard uses for controls
+ * (--radius-sm) to full, so every control that is a rounded-sm in @bundu/ui
+ * becomes a pill and every square icon-only control becomes a circle. Cards
+ * keep --radius-md/lg. Proposed upstream as a `density`-style overlay, not a
+ * local fork of the components.
+ */
+:root,
+.dark,
+[data-theme="dark"] {
+  --radius-sm: 9999px;
+  --maps-elev-1:
+    0 1px 2px color-mix(in oklab, var(--foreground) 8%, transparent),
+    0 1px 3px color-mix(in oklab, var(--foreground) 6%, transparent);
+  --maps-elev-2:
+    0 2px 6px color-mix(in oklab, var(--foreground) 10%, transparent),
+    0 8px 24px color-mix(in oklab, var(--foreground) 8%, transparent);
+}
+
+/* Cards and tiles: soft elevation instead of a drawn edge. */
+[data-slot="app-shell"] [data-slot="card"],
+[data-slot="app-shell"] [data-slot="stat-tile"],
+[data-slot="app-shell"] [data-slot="detail-panel"] {
+  border-color: color-mix(in oklab, var(--border) 45%, transparent);
+  box-shadow: var(--maps-elev-1);
+}
+[data-slot="app-shell"] header[data-slot="app-top-bar"] {
+  box-shadow: var(--maps-elev-1);
+  border-bottom-color: transparent;
+}
+
+/* Icon-only controls are circles: equal width and height. */
+[data-slot="app-shell"] button[aria-label]:not(.maps-copy):not([popovertarget]),
+[data-slot="app-shell"] [data-icon-button] {
+  aspect-ratio: 1 / 1;
+}
+.maps-round {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  width: 2rem;
+  height: 2rem;
+}
+@media (pointer: coarse) {
+  .maps-round {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+}
+
+/* Bottom nav (phones). Hit region 45px; labels 14px. */
+.maps-bottom-nav {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 40;
+  display: none;
+  justify-content: space-around;
+  gap: 9px;
+  padding: 7px 14px calc(7px + env(safe-area-inset-bottom));
+  background: color-mix(in oklab, var(--background) 92%, transparent);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 -2px 12px
+    color-mix(in oklab, var(--foreground) 10%, transparent);
+}
+.maps-bottom-nav a,
+.maps-bottom-nav button {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 52px;
+  border-radius: 9999px;
+  border: 0;
+  background: transparent;
+  color: var(--muted-foreground);
+  font: inherit;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  text-decoration: none;
+  cursor: pointer;
+}
+.maps-bottom-nav a::after,
+.maps-bottom-nav button::after {
+  content: "";
+  position: absolute;
+  inset: -2px 0;
+}
+.maps-bottom-nav [aria-current="page"] {
+  color: var(--foreground);
+  background: var(--muted);
+  font-weight: 600;
+}
+.maps-bottom-nav svg {
+  width: 22px;
+  height: 22px;
+}
+@media (max-width: 63.999rem) {
+  .maps-bottom-nav {
+    display: flex;
+  }
+  [data-slot="app-main"] {
+    padding-bottom: 84px;
+  }
+}
+
+/* Code blocks and copy button. */
+.maps-code {
+  min-width: 0;
+  max-width: 100%;
+  position: relative;
+  border-radius: var(--radius-lg);
+  background: var(--muted);
+}
+.maps-code pre {
+  margin: 0;
+  padding: 14px 14px;
+  overflow-x: auto;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+.maps-code code {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.maps-code .maps-copy {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+}
+.maps-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 2rem;
+  padding: 7px 14px;
+  white-space: nowrap;
+  border-radius: 9999px;
+  border: 0;
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: var(--maps-elev-1);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+}
+.maps-copy::after {
+  content: "";
+  position: absolute;
+  inset: -6px -2px;
+}
+@media (pointer: coarse) {
+  .maps-copy {
+    height: 2.75rem;
+  }
+}
+
+/* Map frame and MapLibre controls drawn as round, soft controls. */
+.maps-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--muted);
+  box-shadow: var(--maps-elev-1);
+}
+.maps-frame .maplibregl-ctrl-group {
+  border-radius: 9999px;
+  background: var(--card);
+  box-shadow: var(--maps-elev-2);
+  overflow: hidden;
+}
+.maps-frame .maplibregl-ctrl-group button {
+  width: 32px;
+  height: 32px;
+}
+.maps-frame .maplibregl-ctrl-group button + button {
+  border-top: 0;
+}
+.maps-frame .maplibregl-ctrl-attrib {
+  border-radius: 9999px;
+  background: color-mix(in oklab, var(--card) 88%, transparent);
+  box-shadow: var(--maps-elev-1);
+}
+.maps-frame .maplibregl-ctrl-attrib a {
+  color: var(--foreground);
+}
+
+/* A tabbed snippet picker with no script: exclusive <details>. */
+.maps-snip > summary {
+  list-style: none;
+  cursor: pointer;
+}
+.maps-snip > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Sample-data ribbon. */
+.maps-sample {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.75rem;
+}
+
+[data-slot="app-shell"] main .grid > * {
+  min-width: 0;
+}
+.maps-code pre {
+  padding-right: 112px;
+}
+
+.maps-frame .maplibregl-ctrl-scale {
+  border-radius: 9999px;
+  border: 0;
+  padding: 7px 14px;
+  background: color-mix(in oklab, var(--card) 88%, transparent);
+  color: var(--foreground);
+  box-shadow: var(--maps-elev-1);
+}
+@media (prefers-color-scheme: dark) {
+  .maps-frame .maplibregl-ctrl-icon {
+    filter: invert(1) hue-rotate(180deg);
+  }
+}
+
+/* mzizi-spacing-exempt: a 16px glyph inside a button; the button carries the hit region. */
+.maps-icon {
+  width: 16px;
+  height: 16px;
+}

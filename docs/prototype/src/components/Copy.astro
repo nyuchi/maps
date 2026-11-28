@@ -1,0 +1,8 @@
+---
+// A pill copy button. Enhancement only: with no script the text is still selectable.
+import Icon from "@bundu/ui/Icon.astro";
+const { text, label = "Copy" } = Astro.props;
+---
+<button type="button" class="maps-copy" data-copy={text} aria-label={`${label}: ${text.length > 40 ? text.slice(0, 40) + "…" : text}`}>
+  <Icon name="copy" class="maps-icon" />{label}
+</button>

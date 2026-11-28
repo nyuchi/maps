@@ -1,0 +1,8 @@
+---
+import BrandMark from "@bundu/ui/app/BrandMark.astro";
+const { size = 26 } = Astro.props;
+---
+<span class="inline-flex min-w-0 items-center gap-2" data-slot="maps-wordmark">
+  <BrandMark size={size} decorative />
+  <span class="truncate font-serif text-body font-semibold tracking-tight">Nyuchi <span class="font-normal text-muted-foreground">Maps</span></span>
+</span>

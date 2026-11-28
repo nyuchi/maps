@@ -1,0 +1,37 @@
+---
+import Shell from "../layouts/Shell.astro";
+import PageHeader from "@bundu/ui/app/PageHeader.astro";
+import StatTiles from "@bundu/ui/app/StatTiles.astro";
+import StatTile from "@bundu/ui/app/StatTile.astro";
+import BarChart from "@bundu/ui/app/BarChart.astro";
+import DataTable from "@bundu/ui/app/DataTable.astro";
+import Card from "@bundu/ui/app/Card.astro";
+import ToolbarMenu from "@bundu/ui/app/ToolbarMenu.astro";
+import Sample from "../components/Sample.astro";
+import { series, days } from "../lib";
+const d = days(30);
+const bytes = series(30, 62, 12, 11).map((v, i) => ({ ...d[i], value: v }));
+const errs = series(30, 38, 20, 5).map((v, i) => ({ ...d[i], value: Math.max(2, v) }));
+const byKey = [{ label: "Weather web", value: 8120000 }, { label: "Docs site", value: 1900000 }, { label: "Mukoko app", value: 1580000 }, { label: "Region builder", value: 880000 }];
+const byZoom = [{ label: "z0–5", value: 910000 }, { label: "z6–9", value: 3380000 }, { label: "z10–12", value: 5100000 }, { label: "z13–14", value: 2990000 }];
+const rows = byKey.map((k, i) => ({ key: { text: k.label }, req: { text: k.value.toLocaleString("en-GB") }, hit: { text: ["98.1%", "96.4%", "97.7%", "91.0%"][i] }, err: { text: ["0.02%", "0.05%", "0.03%", "0.11%"][i] }, quota: { text: ["81%", "19%", "32%", "—"][i] } }));
+---
+<Shell title="Usage" current="/usage/">
+  <PageHeader title="Usage" description="Requests, bytes and cache hits, from our own metering. Counts are aggregates; no visitor is identified." docsHref="https://docs.nyuchi.com" crumbs={[{ label: "Console", href: "#" }, { label: "Maps", href: "/" }, { label: "Usage" }]}>
+    <Fragment slot="actions"><ToolbarMenu label="Date range" choices={[{ label: "Last 30 days", href: "?range=30d", current: true }, { label: "Last 7 days", href: "?range=7d" }, { label: "Last 24 hours", href: "?range=24h" }]} /></Fragment>
+  </PageHeader>
+  <Sample />
+  <StatTiles label="Last 30 days" columns={4}>
+    <StatTile label="Requests" value={12480000} trend={8.4} versus="the previous 30 days" />
+    <StatTile label="Tiles from cache" value="97.2%" trend={0.6} points versus="the previous 30 days" />
+    <StatTile label="Bytes served" value="1.9 TB" trend={5.1} versus="the previous 30 days" />
+    <StatTile label="Monthly quota used" value="81%" note="Weather web, the busiest key" />
+  </StatTiles>
+  <div class="grid gap-5 xl:grid-cols-2">
+    <BarChart title="Bytes served per day" caption="Gigabytes served per day, 30 October to 28 November 2026." data={bytes} valueLabel="GB" labelHeading="Day" id="bytes" />
+    <BarChart title="Errors per day" caption="Responses with a 5xx status per day." data={errs} valueLabel="Errors" labelHeading="Day" id="errs" />
+    <BarChart title="Requests by key" caption="Share of requests by key, last 30 days." data={byKey} layout="rows" valueLabel="Requests" labelHeading="Key" id="bykey" />
+    <BarChart title="Requests by zoom" caption="Requests by zoom band, last 30 days." data={byZoom} layout="rows" valueLabel="Requests" labelHeading="Zoom" id="byzoom" />
+  </div>
+  <DataTable caption="Usage by key" columns={[{ key: "key", label: "Key" }, { key: "req", label: "Requests" }, { key: "hit", label: "Cache hits" }, { key: "err", label: "Errors" }, { key: "quota", label: "Quota used" }]} rows={rows} rowKey="key" />
+</Shell>
