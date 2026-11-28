@@ -108,6 +108,10 @@ jobs:
             echo "::warning::No public URL to smoke test (route not enabled, workers_dev off). Set SMOKE_TEST_URL once the route is live."
             exit 0
           fi
+          # wrangler reports a custom domain as "maps.nyuchi.com (custom domain)",
+          # not a URL: keep the first word and add the scheme when it is missing.
+          BASE_URL="${BASE_URL%% *}"
+          case "$BASE_URL" in http://*|https://*) ;; *) BASE_URL="https://${BASE_URL}" ;; esac
           BASE_URL="${BASE_URL%/}"
           echo "Smoke testing ${BASE_URL}/health"
 
