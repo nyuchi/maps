@@ -1,5 +1,5 @@
 # Deploys the Worker to Cloudflare from GitHub Actions: on every push to
-# `main` (the release merge from `staging`) and by hand. Never on pull
+# `main` and by hand. Never on pull
 # requests, so no PR can reach the deploy credentials.
 #
 # The same test, typecheck and bundle checks as ci.yml run first; the deploy
