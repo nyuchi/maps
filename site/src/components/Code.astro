@@ -1,0 +1,14 @@
+---
+import Copy from "./Copy.astro";
+interface Props {
+  code: string;
+  lang?: string;
+  /** Accessible name of the block and of its copy button. */
+  about: string;
+}
+const { code, lang = "", about } = Astro.props;
+---
+<div class="maps-code" data-lang={lang}>
+  <Copy text={code} about={about} />
+  <pre tabindex="0" aria-label={about}><code>{code}</code></pre>
+</div>

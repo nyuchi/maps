@@ -1,12 +1,20 @@
-// Nyuchi Maps page. Plain JavaScript, no framework, no cookies, no third-party
-// host: MapLibre GL JS is vendored next to this file (see scripts/build-web.mjs,
-// which also fills in the version token below and hashes this file's name).
+// The Explorer: the live map. Plain JavaScript, no framework, no cookies, no
+// third-party host. MapLibre GL JS is the vendored copy (see
+// scripts/build-web.mjs); the dashboard theme switch drives light and dark.
 import {
   GeolocateControl,
   Map as MapLibreMap,
   NavigationControl,
   ScaleControl,
-} from "./vendor/maplibre-gl/6.19.0/maplibre-gl.mjs";
+} from "maplibre-gl";
+import {
+  creditItems,
+  formatBounds,
+  formatName,
+  getJson,
+  renderCredits,
+  tileExtension,
+} from "./tilejson.js";
 
 // Where the map opens: from Dakar in the west to the eastern edge of Indonesia,
 // Cape Agulhas to Bizerte, so both areas the archive covers are in view. The
@@ -20,41 +28,24 @@ const AREA_FRAME = [
   [141.5, 37.4],
 ];
 
-const THEME_KEY = "nyuchi-maps-theme";
 const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
+const currentTheme = () =>
+  document.documentElement.dataset.theme ??
+  (systemDark.matches ? "dark" : "light");
 
-// The saved choice lives in localStorage, never in a cookie. If storage is
-// unavailable the page still works: it just follows the system each visit.
-function savedTheme() {
-  try {
-    const value = window.localStorage.getItem(THEME_KEY);
-    return value === "light" || value === "dark" ? value : null;
-  } catch {
-    return null;
-  }
-}
+// ?lang=xx asks the styles for labels in that language (two or three letters,
+// as /v1/styles accepts); anything else is ignored.
+const langParam = new URLSearchParams(location.search).get("lang");
+const lang = langParam && /^[a-z]{2,3}$/.test(langParam) ? langParam : null;
+const styleUrl = (theme) =>
+  `/v1/styles/${theme}.json${lang ? `?lang=${lang}` : ""}`;
 
-function saveTheme(value) {
-  try {
-    window.localStorage.setItem(THEME_KEY, value);
-  } catch {
-    // Storage is blocked: the choice lasts for this visit only.
-  }
-}
-
-let choice = savedTheme(); // null means follow the system
-const currentTheme = () => choice ?? (systemDark.matches ? "dark" : "light");
-const styleUrl = (theme) => `/v1/styles/${theme}.json`;
-
-const toggle = document.getElementById("theme");
 const status = document.getElementById("status");
 const statusText = document.getElementById("status-text");
 const retry = document.getElementById("retry");
+const readout = document.getElementById("readout");
 
 let theme = currentTheme();
-document.documentElement.dataset.theme = theme;
-toggle.setAttribute("aria-checked", String(theme === "dark"));
-
 let loaded = false;
 
 function showStatus(message) {
@@ -119,21 +110,53 @@ retry.addEventListener("click", () => {
   map.setStyle(styleUrl(theme));
 });
 
-function applyTheme(next) {
+// The dashboard theme switch (and the system, until a choice is made) drives the map.
+window.addEventListener("themechange", () => {
+  const next = currentTheme();
   if (next === theme) return;
   theme = next;
-  document.documentElement.dataset.theme = theme;
-  toggle.setAttribute("aria-checked", String(theme === "dark"));
   map.setStyle(styleUrl(theme));
+});
+
+function updateReadout() {
+  const c = map.getCenter();
+  readout.textContent = `${c.lat.toFixed(4)}, ${c.lng.toFixed(4)} at zoom ${map.getZoom().toFixed(1)}`;
 }
+map.on("move", updateReadout);
+updateReadout();
 
-toggle.addEventListener("click", () => {
-  choice = theme === "dark" ? "light" : "dark";
-  saveTheme(choice);
-  applyTheme(choice);
-});
+// "Copy link to this view": the page address already carries the view in its hash.
+function updateViewUrl() {
+  const el = document.getElementById("view-url");
+  if (el) el.textContent = location.href;
+}
+map.on("moveend", () => setTimeout(updateViewUrl, 0));
+updateViewUrl();
 
-// Until the person chooses, follow the system as it changes.
-systemDark.addEventListener("change", () => {
-  if (choice === null) applyTheme(currentTheme());
-});
+// Facts about the tiles, read from the service's own TileJSON.
+const facts = document.getElementById("facts");
+if (facts) {
+  getJson("/v1/tiles.json")
+    .then((tj) => {
+      const set = (key, value) => {
+        const el = facts.querySelector(`[data-fact="${key}"]`);
+        if (el) el.textContent = value ?? "Not stated";
+      };
+      set("zoom", `${tj.minzoom} to ${tj.maxzoom}`);
+      set("format", formatName(tileExtension(tj)));
+      set("bounds", formatBounds(tj.bounds));
+      const credits = facts.querySelector('[data-fact="credits"]');
+      if (credits) renderCredits(credits, creditItems(tj.attribution));
+    })
+    .catch(() => {
+      for (const el of facts.querySelectorAll("[data-fact]"))
+        el.textContent = "Not available";
+    });
+}
+if (lang) {
+  const el = document.getElementById("lang-note");
+  if (el) {
+    el.textContent = `Labels in: ${lang}`;
+    el.hidden = false;
+  }
+}

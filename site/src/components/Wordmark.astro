@@ -1,0 +1,11 @@
+---
+// The official Nyuchi mark (BrandMark, from Mzizi's brand assets) beside the product name.
+// There is no Nyuchi Maps product icon in Mzizi or in any Nyuchi repository, so the mark is the
+// Nyuchi mark; a proposed Maps icon is for the owner to approve (docs/console-design.md, section 9).
+import BrandMark from "@bundu/ui/app/BrandMark.astro";
+const { size = 32 } = Astro.props;
+---
+<span class="inline-flex min-w-0 items-center gap-[9px]" data-slot="maps-wordmark">
+  <BrandMark size={size} decorative loading="eager" />
+  <span data-slot="brand-wordmark" class="truncate font-serif text-body font-semibold tracking-tight">Nyuchi <span class="font-normal text-muted-foreground">Maps</span></span>
+</span>

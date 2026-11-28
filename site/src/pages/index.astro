@@ -1,0 +1,141 @@
+---
+import Alert from "@bundu/ui/app/Alert.astro";
+import Badge from "@bundu/ui/app/Badge.astro";
+import Button from "@bundu/ui/app/Button.astro";
+import Card from "@bundu/ui/app/Card.astro";
+import PageHeader from "@bundu/ui/app/PageHeader.astro";
+import StatTile from "@bundu/ui/app/StatTile.astro";
+import StatTiles from "@bundu/ui/app/StatTiles.astro";
+import StateMessage from "@bundu/ui/app/StateMessage.astro";
+import Icon from "@bundu/ui/Icon.astro";
+import Shell from "../layouts/Shell.astro";
+import { CONSOLE_KEYS_URL, MAPS_API_BASE, MAPS_API_ENABLED } from "../config";
+import { AREAS, drawing, formatBounds } from "../lib/coverage";
+
+const d = drawing();
+const missing = [
+  ["The Maps API at api.nyuchi.com", "Not enabled yet"],
+  ["Developer keys for Maps", "Not issued yet"],
+  ["Request, byte and cache counters", "Start when the API is enabled"],
+];
+---
+<Shell
+  title="Overview"
+  current="/"
+  description="The tile origin and developer dashboard for Nyuchi Maps: what it serves, where, and how it is doing."
+>
+  <PageHeader
+    title="Overview"
+    description="Tile infrastructure for Nyuchi and the people who build on it. This is the origin and the dashboard, not a consumer map app."
+    docsHref="/docs/"
+  />
+
+  {MAPS_API_ENABLED ? (
+    <Alert variant="success" title="The Maps API is enabled">
+      <p>Tiles, styles, glyphs and sprites are served at {MAPS_API_BASE} with a Nyuchi key. This site is the origin behind it.</p>
+    </Alert>
+  ) : (
+    <Alert variant="info" title="The public Maps API is not enabled yet">
+      <p>This site is the tile origin and the dashboard. Public access, keys and usage counting are the Nyuchi API's job, at api.nyuchi.com, and it does not serve Maps yet. The endpoints on this site's Endpoints page are marked until it does.</p>
+    </Alert>
+  )}
+
+  <StatTiles label="Service facts, read live from this service" columns={4}>
+    <StatTile label="Service" value="Checking…" note="Asking /health" />
+    <StatTile label="Zoom levels" value="Checking…" note="Reading the TileJSON" />
+    <StatTile label="Tile format" value="Checking…" note="Reading the TileJSON" />
+    <StatTile label="Coverage" value="Checking…" note="Reading the TileJSON" />
+  </StatTiles>
+
+  <div class="grid gap-5 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+    <Card padding="md" class="grid content-start gap-[14px]">
+      <div>
+        <h2 class="text-body font-semibold">Coverage</h2>
+        <p class="mt-1 text-body-sm text-muted-foreground">The areas the archive is built to cover, from the extract region file. The dashed frame is the bounds the TileJSON reports right now.</p>
+      </div>
+      <svg
+        id="coverage-drawing"
+        class="maps-coverage"
+        viewBox={`0 0 ${d.width} ${d.height}`}
+        role="img"
+        aria-label={`Outline map of the stored areas: ${AREAS.map((a) => a.name).join(" and ")}.`}
+        data-west={d.west}
+        data-north={d.north}
+        data-scale={d.scale}
+        data-width={d.width}
+        data-height={d.height}
+      >
+        <path class="grid" d={d.lines} />
+        {d.paths.map((p) => <path class="area" d={p.d} />)}
+      </svg>
+      <table class="w-full border-collapse text-body-sm">
+        <caption class="sr-only">Stored areas and their bounds, west and south to east and north, in degrees</caption>
+        <thead>
+          <tr class="text-caption text-muted-foreground">
+            <th scope="col" class="py-1 pr-4 text-start font-medium">Area</th>
+            <th scope="col" class="py-1 text-start font-medium">Bounds</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border">
+          {AREAS.map((a) => (
+            <tr>
+              <th scope="row" class="py-2 pr-4 text-start font-medium">{a.name}</th>
+              <td class="py-2 font-mono text-caption">{formatBounds(a.bounds)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </Card>
+
+    <div class="grid content-start gap-5">
+      <Card padding="md" class="grid gap-[14px]">
+        <h2 class="text-body font-semibold">The tiles</h2>
+        <dl id="facts" aria-busy="true" class="grid gap-[14px] text-body-sm">
+          <div><dt class="text-caption text-muted-foreground">Name</dt><dd data-fact="name">Loading…</dd></div>
+          <div><dt class="text-caption text-muted-foreground">TileJSON version</dt><dd data-fact="version">Loading…</dd></div>
+          <div><dt class="text-caption text-muted-foreground">Scheme</dt><dd data-fact="scheme">Loading…</dd></div>
+          <div><dt class="text-caption text-muted-foreground">Bounds, west and south to east and north</dt><dd data-fact="bounds" class="font-mono text-caption">Loading…</dd></div>
+          <div><dt class="text-caption text-muted-foreground">Centre</dt><dd data-fact="centre">Loading…</dd></div>
+          <div><dt class="text-caption text-muted-foreground">Tile template on this origin (not the public API)</dt><dd data-fact="template" class="font-mono text-caption break-all">Loading…</dd></div>
+          <div><dt class="text-caption text-muted-foreground">Credits the TileJSON carries</dt><dd><ul role="list" data-fact="credits" class="grid gap-[14px]"><li>Loading…</li></ul></dd></div>
+        </dl>
+      </Card>
+
+      <Card padding="md" class="grid gap-[14px]">
+        <h2 class="text-body font-semibold">Quick actions</h2>
+        <div class="flex flex-wrap gap-[14px]">
+          <Button href="/explorer/" variant="primary"><Icon name="map-pin" class="maps-icon" />Open the Explorer</Button>
+          <Button href="/embed-builder/" variant="outline"><Icon name="code" class="maps-icon" />Build an embed</Button>
+          <Button href="/endpoints/" variant="outline"><Icon name="terminal" class="maps-icon" />Copy a snippet</Button>
+        </div>
+      </Card>
+    </div>
+  </div>
+
+  <div role="region" aria-labelledby="usage-h" class="grid gap-[14px]">
+    <h2 id="usage-h" class="text-body font-semibold">Usage</h2>
+    <StateMessage
+      kind="empty"
+      level={3}
+      title={MAPS_API_ENABLED ? "Usage is in the Console" : "Usage arrives with the API"}
+      message={MAPS_API_ENABLED
+        ? "Requests, bytes, cache hits and errors per key are shown in the Nyuchi Console, not on this site."
+        : "Requests, bytes and cache hits are counted where keys are checked, at api.nyuchi.com. The Maps API is not enabled there yet, so there is nothing to count. This site does not log who fetches tiles, and it shows no number it cannot back."}
+    >
+      <Button href={CONSOLE_KEYS_URL} variant="outline" size="sm">Open keys and usage in the Console<Icon name="external" class="maps-icon" /></Button>
+    </StateMessage>
+    {!MAPS_API_ENABLED && (
+      <ul role="list" class="grid gap-[14px] text-body-sm sm:grid-cols-3" aria-label="What is missing">
+        {missing.map(([what, state]) => (
+          <li class="flex flex-wrap items-center justify-between gap-[14px] rounded-md bg-card px-4 py-3 shadow-[var(--maps-elev-1)]">
+            <span>{what}</span><Badge variant="secondary">{state}</Badge>
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+</Shell>
+
+<script>
+  import "../scripts/overview.js";
+</script>

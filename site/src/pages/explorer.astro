@@ -1,0 +1,57 @@
+---
+import Card from "@bundu/ui/app/Card.astro";
+import PageHeader from "@bundu/ui/app/PageHeader.astro";
+import Copy from "../components/Copy.astro";
+import Shell from "../layouts/Shell.astro";
+---
+<Shell
+  title="Explorer"
+  current="/explorer/"
+  description="The live Nyuchi base map, in light and dark."
+  map
+>
+  <PageHeader
+    title="Explorer"
+    description="The live base map, drawn from this service's own tiles. The theme switch in the sidebar changes the map between light and dark."
+    docsHref="/docs/"
+  />
+  <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_21rem]">
+    <div class="maps-frame h-[62dvh] min-h-[26rem] xl:h-[calc(100dvh-11rem)]">
+      <div id="map" class="map-canvas" role="region" aria-label="Map of Africa and South East Asia"></div>
+      <div id="status" class="maps-status" role="status" hidden>
+        <p id="status-text"></p>
+        <button id="retry" type="button" class="inline-flex h-9 items-center rounded-sm border border-border bg-card px-[17px] text-body-sm font-medium hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:h-12">Try again</button>
+      </div>
+      <noscript>
+        <p class="maps-status">The map needs JavaScript. The same tiles and styles are available as an open API, see /openapi.json.</p>
+      </noscript>
+    </div>
+
+    <div class="grid content-start gap-5">
+      <Card padding="md" class="grid gap-[14px]">
+        <h2 class="text-body font-semibold">This view</h2>
+        <p id="readout" class="maps-readout font-mono text-body-sm" aria-live="off">Loading…</p>
+        <p id="lang-note" class="text-body-sm text-muted-foreground" hidden></p>
+        <div>
+          <Copy from="view-url" label="Copy link" about="to this view" />
+          <span id="view-url" hidden></span>
+        </div>
+        <p class="text-caption text-muted-foreground">The link carries the position in its address, so it opens the same view. Add <code class="font-mono">?lang=fr</code> for labels in another language.</p>
+      </Card>
+      <Card padding="md" class="grid gap-[14px]">
+        <h2 class="text-body font-semibold">The tiles</h2>
+        <dl id="facts" class="grid gap-[14px] text-body-sm">
+          <div><dt class="text-caption text-muted-foreground">Zoom levels</dt><dd data-fact="zoom">Loading…</dd></div>
+          <div><dt class="text-caption text-muted-foreground">Format</dt><dd data-fact="format">Loading…</dd></div>
+          <div><dt class="text-caption text-muted-foreground">Bounds, west and south to east and north</dt><dd data-fact="bounds" class="font-mono text-caption">Loading…</dd></div>
+          <div><dt class="text-caption text-muted-foreground">Credits the TileJSON carries</dt><dd><ul role="list" data-fact="credits" class="grid gap-[14px]"><li>Loading…</li></ul></dd></div>
+        </dl>
+        <p class="text-caption text-muted-foreground">The map shows the same credits behind the small (i) in its corner. They come from the TileJSON and cannot be removed.</p>
+      </Card>
+    </div>
+  </div>
+</Shell>
+
+<script>
+  import "../scripts/explorer.js";
+</script>

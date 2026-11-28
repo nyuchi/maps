@@ -1,0 +1,11 @@
+---
+// A round, icon-only theme switch for the shell's `sidebar-footer` slot, beside the collapse
+// toggle. Radix Sun and Moon through the icon seam. Enhancement only: it is hidden until the
+// script runs, and without it the page follows the operating system (color-scheme.css).
+import Icon from "@bundu/ui/Icon.astro";
+---
+<button type="button" data-theme-toggle hidden aria-label="Switch theme"
+  class="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:h-[45px] pointer-coarse:w-[45px]">
+  <Icon name="sun" class="theme-sun h-4 w-4" />
+  <Icon name="moon" class="theme-moon h-4 w-4" />
+</button>

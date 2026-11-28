@@ -34,7 +34,7 @@ import {
   type SourceDef,
 } from "./sources";
 import { buildStyle } from "./styles";
-import { mapAsset, mapPage, staticFile } from "./web";
+import { registerWebRoutes } from "./web";
 import type { AppEnv } from "./types";
 import {
   isName,
@@ -81,11 +81,9 @@ export function createApp(
     ),
   );
 
-  // The map page and its static files (public/, through the ASSETS binding).
-  app.get("/", mapPage);
-  app.get("/assets/*", mapAsset);
-  app.get("/favicon.svg", staticFile);
-  app.get("/robots.txt", staticFile);
+  // The dashboard, the embed page and their static files (public/, through
+  // the ASSETS binding): see src/web.ts.
+  registerWebRoutes(app);
 
   let openapiJson: unknown;
   app.get("/openapi.json", (c) => {

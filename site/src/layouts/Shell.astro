@@ -1,0 +1,67 @@
+---
+import "../styles/global.css";
+import AppShell from "@bundu/ui/app/AppShell.astro";
+import SideNav from "@bundu/ui/app/SideNav.astro";
+import WorkspaceSwitcher from "@bundu/ui/app/WorkspaceSwitcher.astro";
+import { groupNav } from "@bundu/ui/app/nav";
+import themeInit from "../scripts/theme-init.js?url";
+import BottomNav from "../components/BottomNav.astro";
+import ThemeToggle from "../components/ThemeToggle.astro";
+import Wordmark from "../components/Wordmark.astro";
+import { DOCS_URL, PLATFORM_STATUS_URL } from "../config";
+import { GROUP_ORDER, NAV, PHONE_NAV } from "../lib/nav";
+import { MAPLIBRE_BASE } from "../lib/maplibre";
+
+interface Props {
+  title: string;
+  description: string;
+  /** The href of this page in the navigation. */
+  current: string;
+  /** The page draws a map: load MapLibre's stylesheet and preload its module. */
+  map?: boolean;
+}
+const { title, description, current, map = false } = Astro.props;
+const groups = groupNav(
+  NAV.map((n) => ({ ...n })),
+  GROUP_ORDER,
+);
+const footerLinks = [
+  { label: "OpenAPI document", href: "/openapi.json" },
+  { label: "Nyuchi documentation", href: DOCS_URL },
+  { label: "Platform status", href: PLATFORM_STATUS_URL },
+];
+---
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{title} · Nyuchi Maps</title>
+    <meta name="description" content={description} />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1c1b19" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/favicon.png" type="image/png" media="(prefers-color-scheme: light)" />
+    <link rel="icon" href="/favicon-dark.png" type="image/png" media="(prefers-color-scheme: dark)" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
+    {map && <link rel="stylesheet" href={`${MAPLIBRE_BASE}/maplibre-gl.css`} />}
+    {map && <link rel="modulepreload" href={`${MAPLIBRE_BASE}/maplibre-gl.mjs`} />}
+    <script is:inline src={themeInit}></script>
+  </head>
+  <body class="min-h-dvh bg-background text-foreground antialiased">
+    <a href="#main" class="sr-only z-50 rounded-md bg-foreground px-4 py-3 text-background focus:not-sr-only focus:fixed focus:top-4 focus:left-4">Skip to content</a>
+    <AppShell accent="gold" navLabel="navigation" sidebarLabel="Nyuchi Maps" footerLinks={footerLinks} id="maps">
+      <WorkspaceSwitcher slot="workspace" name="Developer dashboard" href="/">
+        <Wordmark slot="mark" size={32} />
+      </WorkspaceSwitcher>
+      <SideNav slot="nav" groups={groups} label="Maps" idPrefix="maps-nav" current={current} />
+      <Wordmark slot="brand" size={28} />
+      <ThemeToggle slot="sidebar-footer" />
+      <slot />
+    </AppShell>
+    <BottomNav items={PHONE_NAV} current={current} />
+    <script>
+      import "../scripts/shell.js";
+    </script>
+  </body>
+</html>

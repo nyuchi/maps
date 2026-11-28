@@ -13,6 +13,7 @@
     "build": "npm run check:web && wrangler deploy --dry-run --outdir dist",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "site:install": "npm ci --prefix site",
     "build:web": "node scripts/build-web.mjs",
     "check:web": "node scripts/build-web.mjs --check"
   },
