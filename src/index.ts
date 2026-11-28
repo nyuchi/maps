@@ -12,6 +12,11 @@ import {
 } from "./archive";
 import { attributionHtml } from "./credits";
 import { regionsOn } from "./regions/config";
+
+/** Web Mercator limits: what a tile client may ask for anywhere. */
+const WORLD_BOUNDS: [number, number, number, number] = [
+  -180, -85.0511, 180, 85.0511,
+];
 import { mayCreateDemand, reportDemand } from "./regions/demand";
 import {
   CACHE_FALLBACK,
@@ -137,7 +142,13 @@ export function createApp(
         attribution: attributionHtml(def.creditIds),
         minzoom: header.minZoom,
         maxzoom: header.maxZoom,
-        bounds: [header.minLon, header.minLat, header.maxLon, header.maxLat],
+        // With on-demand regions on, any place can be added, and a client
+        // (MapLibre) never asks for a tile outside the bounds it is told. So
+        // the default source says "the world", not the first archive's box.
+        bounds:
+          def.id === DEFAULT_SOURCE_ID && regionsOn(c.env)
+            ? WORLD_BOUNDS
+            : [header.minLon, header.minLat, header.maxLon, header.maxLat],
         center: [header.centerLon, header.centerLat, header.centerZoom],
       },
       CACHE_ASSET,
