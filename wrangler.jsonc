@@ -79,6 +79,19 @@
     },
   ],
 
+  // On-demand regions (docs/ondemand-regions.md). The demand ledger is a
+  // SQLite-backed Durable Object; the class is exported by src/index.ts and
+  // the migration below is applied by the deploy itself, so nothing has to be
+  // created first. It is idle until the owner sets the var
+  // ONDEMAND_REGIONS=on (add it to "vars" when enabling; unset means off and
+  // the Worker behaves exactly as before) and the BUILDER_TOKEN secret.
+  "durable_objects": {
+    "bindings": [{ "name": "DEMAND", "class_name": "DemandLedger" }],
+  },
+  "migrations": [
+    { "tag": "v1-demand-ledger", "new_sqlite_classes": ["DemandLedger"] },
+  ],
+
   "observability": {
     "enabled": true,
   },

@@ -66,7 +66,8 @@ class R2Source implements Source {
 const archiveCaches = new WeakMap<R2Bucket, ResolvedValueCache>();
 
 /** Tile bytes are passed through still compressed (see tileEncoding). */
-const passThrough = async (buf: ArrayBuffer): Promise<ArrayBuffer> => buf;
+export const passThrough = async (buf: ArrayBuffer): Promise<ArrayBuffer> =>
+  buf;
 
 function cacheFor(env: Env): ResolvedValueCache {
   let cache = archiveCaches.get(env.MAPS_BUCKET);
@@ -82,6 +83,18 @@ export function openArchive(env: Env, key: string): PMTiles {
   // The cache decompresses directories itself; this decompress only touches
   // tile bytes, which the client can inflate.
   return new PMTiles(source, cacheFor(env), passThrough);
+}
+
+/**
+ * An archive reader with its own empty cache: for verifying an object that
+ * may have just been (re)uploaded under a key this isolate has seen before.
+ */
+export function openArchiveUncached(env: Env, key: string): PMTiles {
+  return new PMTiles(
+    new R2Source(env.MAPS_BUCKET, key),
+    new ResolvedValueCache(8),
+    passThrough,
+  );
 }
 
 async function gunzip(bytes: ArrayBuffer): Promise<ArrayBuffer> {

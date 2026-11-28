@@ -11,6 +11,16 @@ import {
   tileExt,
 } from "./archive";
 import { attributionHtml } from "./credits";
+import { regionsOn } from "./regions/config";
+import { mayCreateDemand, reportDemand } from "./regions/demand";
+import {
+  CACHE_FALLBACK,
+  CACHE_UPSTREAM,
+  upstreamTile,
+} from "./regions/fallback";
+import { cellId, type Cell } from "./regions/grid";
+import { internal } from "./regions/internal";
+import { classify, loadManifest } from "./regions/manifest";
 import { cors } from "./cors";
 import { originAuth } from "./originauth";
 import {
@@ -91,6 +101,9 @@ export function createApp(
     return jsonResponse(c, openapiJson, CACHE_ASSET);
   });
 
+  // The region builder's calls: bearer token, 404 until BUILDER_TOKEN is set.
+  app.route("/internal/v1/regions", internal);
+
   app.use("/v1/*", rateLimit);
 
   type Ctx = Context<AppEnv>;
@@ -131,38 +144,45 @@ export function createApp(
     );
   }
 
-  async function tile(c: Ctx, def: SourceDef): Promise<Response> {
-    const req = parseTile(
-      c.req.param("z") ?? "",
-      c.req.param("x") ?? "",
-      c.req.param("file") ?? "",
-    );
-    if (!req) return jsonError(400, "invalid_tile_coordinates");
-
-    const edge = c.env.EDGE_CACHE === "off" ? null : caches.default;
-    // Key on origin + path + the archive version only: a query string must
-    // not bypass the cache, and bumping TILES_VERSION retires every cached
-    // tile of a replaced archive.
-    const url = new URL(c.req.url);
-    const cacheKey = new Request(
-      `${url.origin}${url.pathname}?v=${encodeURIComponent(c.env.TILES_VERSION ?? "")}`,
-    );
-    if (edge) {
-      const hit = await edge.match(cacheKey);
-      if (hit) {
-        const etag = hit.headers.get("ETag");
-        if (etag && etagMatches(c.req.header("If-None-Match"), etag)) {
-          return new Response(null, { status: 304, headers: hit.headers });
-        }
-        return rebuild(hit);
-      }
+  /** waitUntil when there is an execution context (not in some tests). */
+  function defer(c: Ctx, work: Promise<unknown>): void {
+    try {
+      c.executionCtx.waitUntil(work);
+    } catch {
+      void work.catch(() => {});
     }
+  }
 
-    // Only a miss costs the origin anything, so only a miss is limited.
-    const limited = await checkRateLimit(c);
-    if (limited) return limited;
+  /** The edge-cached tile for a key, as a response, or a 304. */
+  async function fromEdge(
+    c: Ctx,
+    edge: Cache | null,
+    key: Request,
+  ): Promise<Response | null> {
+    if (!edge) return null;
+    const hit = await edge.match(key);
+    if (!hit) return null;
+    const etag = hit.headers.get("ETag");
+    if (etag && etagMatches(c.req.header("If-None-Match"), etag)) {
+      return new Response(null, { status: 304, headers: hit.headers });
+    }
+    return rebuild(hit);
+  }
 
-    const archive = openArchive(c.env, sourceKey(c.env, def));
+  /**
+   * Answer a tile from one archive: format and zoom checks, ETag and 304, the
+   * range read, the 204 for a tile the archive does not hold, and the edge
+   * cache write. `label` is set (X-Tile-Source) only when regions are on.
+   */
+  async function fromArchive(
+    c: Ctx,
+    archiveKey: string,
+    cacheKey: Request,
+    req: { z: number; x: number; y: number; ext: string },
+    edge: Cache | null,
+    label?: string,
+  ): Promise<Response> {
+    const archive = openArchive(c.env, archiveKey);
     const header = await archive.getHeader();
     const ext = tileExt(header);
     if (ext !== req.ext) {
@@ -179,6 +199,7 @@ export function createApp(
       "Content-Type": tileContentType(ext),
       "Cache-Control": CACHE_TILE,
     });
+    if (label) headers.set("X-Tile-Source", label);
     if (encoding) headers.set("Content-Encoding", encoding);
     if (header.etag) {
       headers.set("ETag", `"${header.etag}:${req.z}/${req.x}/${req.y}"`);
@@ -193,10 +214,9 @@ export function createApp(
     const found = await archive.getZxy(req.z, req.x, req.y, c.req.raw.signal);
     if (!found) {
       // Inside the archive's zoom range but no data here (ocean, empty cell).
-      return new Response(null, {
-        status: 204,
-        headers: { "Cache-Control": CACHE_EMPTY },
-      });
+      const empty: Record<string, string> = { "Cache-Control": CACHE_EMPTY };
+      if (label) empty["X-Tile-Source"] = label;
+      return new Response(null, { status: 204, headers: empty });
     }
 
     const res = new Response(found.data, responseInit(200, headers));
@@ -214,6 +234,125 @@ export function createApp(
       }
     }
     return res;
+  }
+
+  /**
+   * A tile no archive holds (on-demand regions only): record the demand
+   * without waiting for it, then answer with the best thing available now.
+   * Never cached for long, so the region that fills it is not hidden.
+   */
+  async function notStored(
+    c: Ctx,
+    req: { z: number; x: number; y: number },
+    cell: Cell,
+    state: Awaited<ReturnType<typeof loadManifest>>,
+    edge: Cache | null,
+    fallbackKey: Request,
+  ): Promise<Response> {
+    if (mayCreateDemand(c.env, c.req.raw.headers)) {
+      defer(
+        c,
+        reportDemand(c.env, {
+          cell: cellId(cell),
+          tile: `${req.z}/${req.x}/${req.y}`,
+          ip: c.req.header("CF-Connecting-IP"),
+        }),
+      );
+    }
+    if (c.env.FALLBACK_MODE === "upstream") {
+      const hit = await fromEdge(c, edge, fallbackKey);
+      if (hit) return hit;
+    }
+    const limited = await checkRateLimit(c);
+    if (limited) return limited;
+
+    const up = await upstreamTile(c.env, state.manifest.upstream?.url, req);
+    if (up) {
+      const headers = new Headers({
+        "Content-Type": "application/vnd.mapbox-vector-tile",
+        "Content-Encoding": "gzip",
+        "Cache-Control": CACHE_UPSTREAM,
+        "X-Tile-Source": "upstream",
+      });
+      if (edge) {
+        try {
+          c.executionCtx.waitUntil(
+            edge.put(
+              fallbackKey,
+              new Response(up.data, responseInit(200, new Headers(headers))),
+            ),
+          );
+        } catch {
+          // No execution context (tests): skip the write.
+        }
+      }
+      return new Response(up.data, responseInit(200, headers));
+    }
+    return new Response(null, {
+      status: 204,
+      headers: { "Cache-Control": CACHE_FALLBACK, "X-Tile-Source": "none" },
+    });
+  }
+
+  async function tile(c: Ctx, def: SourceDef): Promise<Response> {
+    const req = parseTile(
+      c.req.param("z") ?? "",
+      c.req.param("x") ?? "",
+      c.req.param("file") ?? "",
+    );
+    if (!req) return jsonError(400, "invalid_tile_coordinates");
+
+    const edge = c.env.EDGE_CACHE === "off" ? null : caches.default;
+    // Key on origin + path + the archive version only: a query string must
+    // not bypass the cache, and bumping TILES_VERSION retires every cached
+    // tile of a replaced archive. Region tiles and fallback tiles add a
+    // segment (see docs/ondemand-regions.md), so each has its own entries.
+    const url = new URL(c.req.url);
+    const keyFor = (suffix = ""): Request =>
+      new Request(
+        `${url.origin}${url.pathname}?v=${encodeURIComponent(c.env.TILES_VERSION ?? "")}${suffix}`,
+      );
+    const primaryKey = keyFor();
+    const hit = await fromEdge(c, edge, primaryKey);
+    if (hit) return hit;
+
+    const key = sourceKey(c.env, def);
+    if (def.id !== DEFAULT_SOURCE_ID || !regionsOn(c.env)) {
+      // Only a miss costs the origin anything, so only a miss is limited.
+      const limited = await checkRateLimit(c);
+      if (limited) return limited;
+      return fromArchive(c, key, primaryKey, req, edge);
+    }
+
+    // On-demand regions: where does this tile live?
+    const header = await openArchive(c.env, key).getHeader();
+    if (tileExt(header) !== req.ext) {
+      return jsonError(404, "format_mismatch", { "Cache-Control": CACHE_MISS });
+    }
+    const state = await loadManifest(c.env);
+    const where = classify(state, header, req);
+
+    if (where.kind === "region") {
+      const regionKey = keyFor(`&r=${encodeURIComponent(where.region.key)}`);
+      const cached = await fromEdge(c, edge, regionKey);
+      if (cached) return cached;
+      const limited = await checkRateLimit(c);
+      if (limited) return limited;
+      return fromArchive(c, where.region.key, regionKey, req, edge, "region");
+    }
+    if (where.kind === "missing") {
+      return notStored(
+        c,
+        req,
+        where.cell,
+        state,
+        edge,
+        keyFor(`&fb=${state.manifest.version}`),
+      );
+    }
+    const limited = await checkRateLimit(c);
+    if (limited) return limited;
+    return fromArchive(c, key, primaryKey, req, edge, "primary");
   }
 
   function lookup(
@@ -313,3 +452,6 @@ export function createApp(
 }
 
 export default createApp();
+
+// The Durable Object class must be a named export of the entry module.
+export { DemandLedger } from "./regions/ledger";
