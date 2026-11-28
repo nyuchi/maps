@@ -205,6 +205,25 @@ describe("manifest", () => {
   });
 });
 
+describe("TileJSON with regions", () => {
+  it("advertises the world as bounds when regions are on, so clients ask for every region", async () => {
+    await putPrimary();
+    await putManifest();
+    const res = await call("/v1/tiles.json", renv());
+    expect(res.status).toBe(200);
+    const tj = (await res.json()) as { bounds: number[] };
+    expect(tj.bounds).toEqual([-180, -85.0511, 180, 85.0511]);
+  });
+
+  it("keeps the archive's own bounds when regions are off", async () => {
+    await putPrimary();
+    const res = await call("/v1/tiles.json", renv({ ONDEMAND_REGIONS: "off" }));
+    expect(res.status).toBe(200);
+    const tj = (await res.json()) as { bounds: number[] };
+    expect(tj.bounds).toEqual([25.2, -22.45, 33.1, -15.55]);
+  });
+});
+
 describe("tiles with regions on", () => {
   it("serves a stored tile and labels its source", async () => {
     const data = await putPrimary();
