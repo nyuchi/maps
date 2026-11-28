@@ -98,7 +98,7 @@ this first slice; see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 | Name              | Kind    | What it is                                                               |
 | ----------------- | ------- | ------------------------------------------------------------------------ |
-| `MAPS_BUCKET`     | binding | The R2 bucket (placeholder name in `wrangler.jsonc`, not created)        |
+| `MAPS_BUCKET`     | binding | The R2 bucket `nyuchi-maps` (tiles, fonts and sprites)                   |
 | `ASSETS`          | binding | Static assets (`public/`: the map page, MapLibre, bundles)               |
 | `RATE_LIMITER`    | binding | Workers rate limiting, 600 requests a minute per client IP               |
 | `PUBLIC_BASE_URL` | var     | Public origin for URLs in TileJSON and styles; `https://maps.nyuchi.com` |
@@ -141,7 +141,7 @@ npm run dev         # wrangler dev (needs a local R2 archive)
 Tests include `test/encoding.test.ts`, which runs the real Worker entry in
 workerd. To check double compression by hand against a local archive (put one in
 the simulated bucket with
-`npx wrangler r2 object put nyuchi-maps-placeholder/tiles/nyuchi-maps.pmtiles --file x.pmtiles --local`):
+`npx wrangler r2 object put nyuchi-maps/tiles/nyuchi-maps.pmtiles --file x.pmtiles --local`):
 
 ```sh
 npx wrangler dev

@@ -29,10 +29,10 @@
     "run_worker_first": true,
   },
 
-  // Not active until the maps.nyuchi.com DNS record exists. The owner
-  // uncomments this, then deploys. The map page is live at / the moment this
-  // route is, with no further change (the assets above ship in the deploy).
-  // "routes": [{ "pattern": "maps.nyuchi.com", "custom_domain": true }],
+  // maps.nyuchi.com is served by this Worker as a Cloudflare custom domain:
+  // a deploy creates the DNS record and the certificate. The map page is live
+  // at / and the API under /v1 from the first deploy that carries this route.
+  "routes": [{ "pattern": "maps.nyuchi.com", "custom_domain": true }],
 
   "vars": {
     // Public origin used in TileJSON and style URLs, without a trailing
@@ -51,12 +51,13 @@
     "TILES_VERSION": "1",
   },
 
-  // The binding NAME is what the code uses. The bucket does not exist yet:
-  // the name below is a placeholder to replace when the owner creates it.
+  // The binding NAME is what the code uses. The bucket holds the PMTiles
+  // archive (tiles/), glyph PBFs (fonts/) and sprites (sprites/); see
+  // scripts/build-extract.md for how they are produced and uploaded.
   "r2_buckets": [
     {
       "binding": "MAPS_BUCKET",
-      "bucket_name": "nyuchi-maps-placeholder",
+      "bucket_name": "nyuchi-maps",
     },
   ],
 
