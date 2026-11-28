@@ -17,8 +17,8 @@ owner provisions the DNS record, so nothing is served until then.
 
 ## The map
 
-`GET /` is a map for people: all of Africa, Madagascar and the nearby islands,
-in a light and a dark style. It follows the system colour scheme, remembers a
+`GET /` is a map for people: all of Africa (with Madagascar and the nearby islands) and
+South East Asia, in a light and a dark style. It follows the system colour scheme, remembers a
 manual choice in `localStorage` (no cookies), and has zoom, rotate, locate-me
 and scale controls. The credits shown on it come from the TileJSON, never from
 the page. It is mobile-first and keyboard accessible, and follows the Bundu
@@ -98,7 +98,7 @@ this first slice; see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 | Name              | Kind    | What it is                                                               |
 | ----------------- | ------- | ------------------------------------------------------------------------ |
-| `MAPS_BUCKET`     | binding | The R2 bucket (placeholder name in `wrangler.jsonc`, not created)        |
+| `MAPS_BUCKET`     | binding | The R2 bucket `nyuchi-maps` (tiles, fonts and sprites)                   |
 | `ASSETS`          | binding | Static assets (`public/`: the map page, MapLibre, bundles)               |
 | `RATE_LIMITER`    | binding | Workers rate limiting, 600 requests a minute per client IP               |
 | `PUBLIC_BASE_URL` | var     | Public origin for URLs in TileJSON and styles; `https://maps.nyuchi.com` |
@@ -122,9 +122,9 @@ fonts/{font name}/{range}.pbf         the stacks the styles use:
 sprites/{light,dark}[@2x].{json,png}
 ```
 
-To produce the Africa archive see
-[`scripts/build-extract.md`](scripts/build-extract.md) (about 5.4 GB at
-maximum zoom 14, measured with `--dry-run`).
+To produce the Africa and South East Asia archive see
+[`scripts/build-extract.md`](scripts/build-extract.md) (about 7.8 GB at
+maximum zoom 14, measured from the real extract).
 
 ## Development
 
@@ -141,7 +141,7 @@ npm run dev         # wrangler dev (needs a local R2 archive)
 Tests include `test/encoding.test.ts`, which runs the real Worker entry in
 workerd. To check double compression by hand against a local archive (put one in
 the simulated bucket with
-`npx wrangler r2 object put nyuchi-maps-placeholder/tiles/nyuchi-maps.pmtiles --file x.pmtiles --local`):
+`npx wrangler r2 object put nyuchi-maps/tiles/nyuchi-maps.pmtiles --file x.pmtiles --local`):
 
 ```sh
 npx wrangler dev

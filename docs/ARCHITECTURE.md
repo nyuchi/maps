@@ -75,9 +75,10 @@ referrer, `geolocation=(self)`; `public, max-age=60` for the HTML and a year
 MapLibre files are copied byte for byte into `assets/vendor/maplibre-gl/<ver>/`
 (with its LICENSE.txt); our `app.js` and `app.css` get a content hash in the
 name. `npm run check:web` (inside `npm run build`, so in CI and the deploy
-verify job) fails if `public/` is stale. The page opens on Africa; its bounds
-equal the bounding box of `scripts/extract-regions.geojson`, which a test
-enforces.
+verify job) fails if `public/` is stale. The page opens on a frame that shows Africa and
+South East Asia, the two areas in `scripts/extract-regions.geojson`; a test
+keeps the frame inside that file's bounding box. It sets no `maxBounds`, so a
+viewer can look anywhere.
 
 ## Tile sources
 

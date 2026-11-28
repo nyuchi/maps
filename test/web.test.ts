@@ -227,10 +227,10 @@ describe("GET / (real assets in workerd)", () => {
 
 describe("page sources", () => {
   function bbox(): [number, number, number, number] {
-    const feature = JSON.parse(regions) as {
-      geometry: { coordinates: number[][][] };
+    const fc = JSON.parse(regions) as {
+      features: { geometry: { coordinates: number[][][] } }[];
     };
-    const points = feature.geometry.coordinates.flat();
+    const points = fc.features.flatMap((f) => f.geometry.coordinates.flat());
     const lons = points.map((p) => p[0]!);
     const lats = points.map((p) => p[1]!);
     return [
@@ -247,42 +247,45 @@ describe("page sources", () => {
     return JSON.parse(m![1]!.replace(/,\s*\]/g, "]")) as number[][];
   }
 
-  it("opens on Africa: the map bounds are the extract region's bounding box", () => {
+  it("opens on a frame inside the extract region's bounding box, covering both areas", () => {
     const [west, south, east, north] = bbox();
-    expect(constant("AFRICA_BOUNDS")).toEqual([
-      [west, south],
-      [east, north],
-    ]);
-    const [[fw, fs], [fe, fn]] = constant("AFRICA_FRAME") as [
-      number[],
-      number[],
-    ];
+    const [[fw, fs], [fe, fn]] = constant("AREA_FRAME") as [number[], number[]];
     expect(fw! >= west && fs! >= south && fe! <= east && fn! <= north).toBe(
       true,
     );
-    // Mainland Africa: Dakar to the Horn, Cape Agulhas to Bizerte.
-    expect(fw! <= -17.5 && fe! >= 51.3 && fs! <= -34.8 && fn! >= 37.3).toBe(
+    // From Dakar and Cape Agulhas to Bizerte and the eastern edge of Indonesia.
+    expect(fw! <= -17.5 && fs! <= -34.8 && fn! >= 37.3 && fe! >= 140).toBe(
       true,
     );
+    // No fence: the viewer may look anywhere.
+    expect(appJs).not.toMatch(/maxBounds\s*:/);
   });
 
-  it("defines the extract region as one Africa polygon with a closed ring", () => {
-    const feature = JSON.parse(regions) as {
+  it("defines the extract region as two named polygons with closed rings", () => {
+    const fc = JSON.parse(regions) as {
       type: string;
-      properties: { name: string };
-      geometry: { type: string; coordinates: number[][][] };
+      features: {
+        properties: { name: string };
+        geometry: { type: string; coordinates: number[][][] };
+      }[];
     };
-    expect(feature.type).toBe("Feature");
-    expect(feature.properties.name).toBe("Africa");
-    expect(feature.geometry.type).toBe("Polygon");
-    const ring = feature.geometry.coordinates[0]!;
-    expect(ring[0]).toEqual(ring[ring.length - 1]);
-    // Counter-clockwise exterior ring (RFC 7946): positive shoelace area.
-    let area = 0;
-    for (let i = 0; i < ring.length - 1; i++) {
-      area += ring[i]![0]! * ring[i + 1]![1]! - ring[i + 1]![0]! * ring[i]![1]!;
+    expect(fc.type).toBe("FeatureCollection");
+    expect(fc.features.map((f) => f.properties.name)).toEqual([
+      "Africa",
+      "South East Asia",
+    ]);
+    for (const feature of fc.features) {
+      expect(feature.geometry.type).toBe("Polygon");
+      const ring = feature.geometry.coordinates[0]!;
+      expect(ring[0]).toEqual(ring[ring.length - 1]);
+      // Counter-clockwise exterior ring (RFC 7946): positive shoelace area.
+      let area = 0;
+      for (let i = 0; i < ring.length - 1; i++) {
+        area +=
+          ring[i]![0]! * ring[i + 1]![1]! - ring[i + 1]![0]! * ring[i]![1]!;
+      }
+      expect(area).toBeGreaterThan(0);
     }
-    expect(area).toBeGreaterThan(0);
   });
 
   async function builtCss(): Promise<string> {
